@@ -186,6 +186,7 @@ export class Selectable<T = unknown> {
       messages,
     });
     this.unhideNative = hideNativeSelect(select);
+    this.wireAccessibleName();
 
     this.list = new ListRenderer<T>(this.refs, {
       baseId: this.baseId,
@@ -409,7 +410,16 @@ export class Selectable<T = unknown> {
       return;
     }
     const filtered = this.computeFiltered(query);
-    const activeIndex = filtered.findIndex((o) => !o.disabled);
+    let activeIndex = filtered.findIndex((o) => !o.disabled);
+    // No matches but a create row will show → it becomes the active row,
+    // so a bare Enter creates the tag.
+    if (activeIndex < 0 && this.cfg.tags && query.trim() !== "") {
+      const label = query.trim().toLocaleLowerCase();
+      const exists = this.store
+        .getState()
+        .options.some((o) => o.label.toLocaleLowerCase() === label);
+      if (!exists) activeIndex = filtered.length;
+    }
     this.store.setState({ query, filtered, activeIndex });
     this.emitter.emit("search", { query });
     if (this.isOpen) {
@@ -583,6 +593,38 @@ export class Selectable<T = unknown> {
 
   private syncFromNative(): void {
     this.applySelection(readNativeSelected(this.select), { silent: true });
+  }
+
+  /**
+   * Gives the trigger (and search input) an accessible name from the native
+   * select's <label>, or its aria-label/aria-labelledby (WCAG 4.1.2).
+   */
+  private wireAccessibleName(): void {
+    const targets = [this.refs.trigger, this.refs.searchInput].filter(
+      (t): t is HTMLElement => t !== null,
+    );
+    const labelledby = this.select.getAttribute("aria-labelledby");
+    const ariaLabel = this.select.getAttribute("aria-label");
+    const label = this.select.labels?.[0];
+    for (const t of targets) {
+      if (labelledby) t.setAttribute("aria-labelledby", labelledby);
+      else if (ariaLabel) t.setAttribute("aria-label", ariaLabel);
+      else if (label) {
+        if (!label.id) label.id = `${this.baseId}-label`;
+        t.setAttribute("aria-labelledby", label.id);
+      }
+    }
+    // Clicking the label should focus the visible control, not the hidden select.
+    if (label && !this.abort.signal.aborted) {
+      label.addEventListener(
+        "click",
+        (e) => {
+          e.preventDefault();
+          this.refs.trigger.focus();
+        },
+        { signal: this.abort.signal },
+      );
+    }
   }
 
   private setActiveDescendant(optionId: string | null): void {

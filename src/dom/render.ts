@@ -11,7 +11,7 @@ export interface Refs {
   root: HTMLElement;
   trigger: HTMLElement;
   value: HTMLElement;
-  clear: HTMLButtonElement;
+  clear: HTMLElement;
   sep: HTMLElement;
   panel: HTMLElement;
   search: HTMLElement | null;
@@ -64,11 +64,10 @@ export function buildSkeleton(
   }
 
   const value = el("span", "sl-value");
-  const clear = el("button", "sl-clear", {
-    type: "button",
-    tabindex: "-1",
-    "aria-hidden": "true",
-  });
+  // Pointer-only target: a <span>, not a <button> — real interactive elements
+  // inside a combobox/button role violate WCAG 4.1.2 (nested-interactive).
+  // Keyboard equivalent: Backspace/Delete; SR flow goes through the live region.
+  const clear = el("span", "sl-clear", { "aria-hidden": "true" });
   clear.appendChild(icons.cross());
   clear.hidden = true;
   const sep = el("span", "sl-sep");
@@ -179,9 +178,8 @@ export function updateTrigger<T>(refs: Refs, ctx: TriggerContext<T>): void {
       const chip = el("span", "sl-chip");
       const label = el("span", "sl-chip-label");
       label.textContent = option.label;
-      const remove = el("button", "sl-chip-remove", {
-        type: "button",
-        tabindex: "-1",
+      // <span>, not <button>: see the sl-clear note in buildSkeleton.
+      const remove = el("span", "sl-chip-remove", {
         "aria-hidden": "true",
         title: ctx.messages.removeItem(option.label),
       });
