@@ -265,6 +265,39 @@ describe("selectAll — keyboard", () => {
   });
 });
 
+describe("selectAll — sticky header offset (regression)", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("keeps the vlist offset through close/reopen — first group must not hide under the header", () => {
+    const select = makeSelect(GROUPED);
+    const inst = new Selectable(select, { selectAll: { groups: true }, search: false });
+    const row = selectAllRow()!;
+    const panel = document.querySelector<HTMLElement>(".sl-panel")!;
+    // jsdom has no layout — emulate the browser: the sticky row measures 32px
+    // only while the panel is SHOWN. This reproduces the real open() order
+    // (the state change renders before the panel is displayed, so the first
+    // measurement attempt sees display:none → offsetHeight 0).
+    Object.defineProperty(row, "offsetHeight", {
+      configurable: true,
+      get: () => (panel.dataset.state === "open" ? 32 : 0),
+    });
+    const vlist = document.querySelector<HTMLElement>(".sl-vlist")!;
+
+    inst.open();
+    // measured on the post-open renderWindow pass, before first paint
+    expect(vlist.style.insetBlockStart).toBe("32px");
+
+    inst.close();
+    inst.open();
+    // regression: reopen used to re-measure while still hidden (0) and CLEAR
+    // the offset → the first group rendered underneath the sticky select-all
+    // until the next hover/keystroke re-measured it (visual jump).
+    expect(vlist.style.insetBlockStart).toBe("32px");
+  });
+});
+
 describe("selectAll — group toggles", () => {
   beforeEach(() => {
     document.body.innerHTML = "";

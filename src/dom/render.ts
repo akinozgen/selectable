@@ -341,7 +341,16 @@ export class ListRenderer<T> {
   private metrics: RowMetrics = { offsets: [0], total: 0 };
   private optionHeight = 32;
   private groupHeight = 26;
-  private measured = false;
+  /**
+   * Per-kind measurement flags. A single shared flag would freeze the group
+   * estimate forever when the first rendered window happens to contain only
+   * options (option found → flag set → the group row that scrolls in later
+   * never gets measured, and every offset below it drifts).
+   */
+  private measuredOption = false;
+  private measuredGroup = false;
+  /** Whether the current row set contains group headers at all. */
+  private hasGroupRows = false;
   private windowStart = -1;
   private windowEnd = -1;
   private selected = new Set<string>();
@@ -374,12 +383,14 @@ export class ListRenderer<T> {
    * root raises --sl-option-h for every option row at once).
    */
   invalidateHeights(): void {
-    this.measured = false;
+    this.measuredOption = false;
+    this.measuredGroup = false;
   }
 
   /** Full data refresh (filter change, options change). */
   setData(filtered: SelectableOption<T>[], selected: string[], activeIndex: number): void {
     this.rows = flattenRows(filtered);
+    this.hasGroupRows = this.rows.some((r) => r.kind === "group");
     this.selected = new Set(selected);
     this.activeIndex = activeIndex;
     this.generation++;
@@ -458,10 +469,26 @@ export class ListRenderer<T> {
     node.setAttribute("aria-selected", String(state.checked === "all"));
     if (state.active) node.setAttribute("data-active", "");
     else node.removeAttribute("data-active");
+    this.syncSelectAllOffset();
+  }
+
+  /**
+   * Pushes the virtual window below the sticky select-all header by the
+   * header's real height. A 0 measurement means "no layout yet" (the open()
+   * state change runs BEFORE the popover is shown, so the panel is still
+   * display:none) — in that case the previous offset is KEPT, never cleared:
+   * clearing it on reopen left the first group row hidden underneath the
+   * sticky header until the next pointer/keyboard state change re-measured,
+   * which read as a missing row + a visual jump. Re-checked on every
+   * renderWindow, so the first visible render after open() self-corrects.
+   */
+  private syncSelectAllOffset(): void {
+    const node = this.refs.selectAllRow;
+    if (!node || node.hidden) return;
     const h = node.offsetHeight;
-    if (h !== this.selectAllOffset) {
+    if (h > 0 && h !== this.selectAllOffset) {
       this.selectAllOffset = h;
-      this.refs.vlist.style.insetBlockStart = h > 0 ? `${h}px` : "";
+      this.refs.vlist.style.insetBlockStart = `${h}px`;
     }
   }
 
@@ -474,7 +501,13 @@ export class ListRenderer<T> {
     const rowIdx = this.rows.findIndex(
       (r) => r.kind === "option" && r.optionIndex === optionIndex,
     );
-    if (rowIdx < 0) return;
+    if (rowIdx < 0) {
+      // No row to scroll to (e.g. activeIndex -1 / select-all sentinel), but
+      // open() calls this right after the panel becomes visible — still give
+      // renderWindow a pass so first-layout measurements land before paint.
+      this.renderWindow();
+      return;
+    }
     const top = this.metrics.offsets[rowIdx]!;
     const bottom = this.metrics.offsets[rowIdx + 1]!;
     const box = this.refs.listbox;
@@ -493,19 +526,33 @@ export class ListRenderer<T> {
   }
 
   private measureFromDom(): void {
-    if (this.measured) return;
-    const opt = this.refs.vlist.querySelector<HTMLElement>(".sl-option");
-    const grp = this.refs.vlist.querySelector<HTMLElement>(".sl-group-label");
+    // Each row kind is measured independently, the first time it appears in
+    // the rendered window WITH layout (offsetHeight 0 = display:none panel or
+    // jsdom — keep the estimate and try again on a later render).
+    const needOption = !this.measuredOption;
+    const needGroup = !this.measuredGroup && this.hasGroupRows;
+    if (!needOption && !needGroup) return;
     let changed = false;
-    if (opt && opt.offsetHeight > 0 && opt.offsetHeight !== this.optionHeight) {
-      this.optionHeight = opt.offsetHeight;
-      changed = true;
+    if (needOption) {
+      const opt = this.refs.vlist.querySelector<HTMLElement>(".sl-option");
+      if (opt && opt.offsetHeight > 0) {
+        if (opt.offsetHeight !== this.optionHeight) {
+          this.optionHeight = opt.offsetHeight;
+          changed = true;
+        }
+        this.measuredOption = true;
+      }
     }
-    if (grp && grp.offsetHeight > 0 && grp.offsetHeight !== this.groupHeight) {
-      this.groupHeight = grp.offsetHeight;
-      changed = true;
+    if (needGroup) {
+      const grp = this.refs.vlist.querySelector<HTMLElement>(".sl-group-label");
+      if (grp && grp.offsetHeight > 0) {
+        if (grp.offsetHeight !== this.groupHeight) {
+          this.groupHeight = grp.offsetHeight;
+          changed = true;
+        }
+        this.measuredGroup = true;
+      }
     }
-    if (opt) this.measured = true;
     if (changed) {
       this.metrics = measureRows(this.rows, this.optionHeight, this.groupHeight);
       this.refs.vsizer.style.height = `${this.metrics.total}px`;
@@ -513,6 +560,10 @@ export class ListRenderer<T> {
   }
 
   private renderWindow(force = false): void {
+    // First: keep the sticky select-all offset honest. Runs before the
+    // early-return below so the post-open ensureVisible() pass (same window)
+    // still picks up the header's first real measurement.
+    this.syncSelectAllOffset();
     const rowCount = this.rows.length;
     const virtual = rowCount > this.cfg.virtualThreshold;
     let start = 0;

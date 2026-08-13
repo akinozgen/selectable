@@ -4,6 +4,7 @@ import {
   widget,
   openViaClick,
   expectOpen,
+  expectClosed,
   nativeSelected,
   installChangeCounter,
   changeCount,
@@ -121,6 +122,33 @@ test.describe("#grouped-multi — per-group toggles", () => {
     await expect(w.chips).toHaveText(["İzmir"]);
     expect(await nativeSelected(page, "grouped-multi")).toEqual(["35"]);
     await expect(marmara).toHaveAttribute("data-checked", "none");
+  });
+
+  test("first group stays visible below the sticky header on open AND reopen (no jump)", async ({ page }) => {
+    const w = widget(page, "grouped-multi");
+    const firstGroupBelowHeader = async () => {
+      const sa = await w.selectAllRow.boundingBox();
+      const g = await w.groupLabels.filter({ hasText: "Marmara" }).boundingBox();
+      expect(g!.y).toBeGreaterThanOrEqual(sa!.y + sa!.height - 1);
+      // the vlist push-down that keeps rows clear of the sticky header
+      const inset = await w.root
+        .locator(".sl-vlist")
+        .evaluate((el) => (el as HTMLElement).style.insetBlockStart);
+      expect(inset).not.toBe("");
+    };
+
+    // first open: measured after the panel becomes visible, before paint
+    await openViaClick(w);
+    await firstGroupBelowHeader();
+
+    // regression: reopening re-ran the measurement while the panel was still
+    // display:none (offsetHeight 0) and CLEARED the offset — "Marmara"
+    // rendered underneath the sticky select-all row until the first hover
+    // re-measured it, which read as a missing group + a visual jump.
+    await page.keyboard.press("Escape");
+    await expectClosed(w);
+    await openViaClick(w);
+    await firstGroupBelowHeader();
   });
 
   test("header row works alongside group toggles", async ({ page }) => {
