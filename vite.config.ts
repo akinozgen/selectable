@@ -16,7 +16,11 @@ export default defineConfig({
       entry: resolve(__dirname, "src/index.ts"),
       name: "Selectable",
       fileName: (format) =>
-        format === "es" ? "selectable.js" : `selectable.${format}`,
+        format === "es"
+          ? "selectable.js"
+          : format === "iife"
+            ? "selectable.global.js"
+            : `selectable.${format}`,
       formats: ["es", "cjs", "iife"],
     },
     rollupOptions: {

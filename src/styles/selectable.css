@@ -34,8 +34,7 @@
   position: relative;
 }
 
-.sl :is(button, input),
-.sl-portal :is(button, input) {
+:where(.sl :is(button, input), .sl-portal :is(button, input)) {
   appearance: none;
   background: transparent;
   border: 0;
@@ -49,6 +48,17 @@
 .sl-portal svg {
   display: block;
   flex-shrink: 0;
+}
+
+/* ✕ ikonları: kapsayıcı dokunma hedefi, görsel ikon küçük */
+.sl-clear svg {
+  inline-size: var(--sl-icon-size);
+  block-size: var(--sl-icon-size);
+}
+
+.sl-chip-remove svg {
+  inline-size: 0.75rem;   /* 12px */
+  block-size: 0.75rem;
 }
 
 /* ---------- GİZLİ NATIVE SELECT / OFFSCREEN ---------- */
@@ -426,9 +436,8 @@
 /* ---------- SANAL LİSTE YARDIMCILARI (JS sürer) ---------- */
 
 .sl-vsizer {
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline-start: 0;
+  /* Normal akışta kalır: listbox'a içsel yükseklik + scroll aralığı verir;
+     yüksekliğini JS yazar, .sl-vlist penceresi üzerine bindirilir. */
   inline-size: 1px;
   visibility: hidden;
   pointer-events: none;
