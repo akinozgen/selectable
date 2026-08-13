@@ -43,16 +43,19 @@ ever leaks into the host page.
       <input class="sl-search-input" role="combobox" aria-autocomplete="list">
     </div>
     <div class="sl-listbox" role="listbox">
-      <!-- selectAll (multiple mode): pinned header row above the options -->
-      <div class="sl-select-all" role="option" aria-selected="false">
+      <!-- selectAll (multiple mode): pinned header row above the options.
+           The leading .sl-checkbox is a permanent tri-state indicator:
+           data-checked="none" (empty) | "some" (minus) | "all" (check). -->
+      <div class="sl-select-all" role="option" aria-selected="false" data-checked="none">
+        <span class="sl-checkbox" aria-hidden="true">…✓ –…</span>
         <span class="sl-option-label">Select all</span>
-        <svg class="sl-check"></svg>
       </div>
       <div class="sl-group-label">Marmara</div>
-      <!-- selectAll: { groups: true } adds data-group/data-checked + icon:
+      <!-- selectAll: { groups: true } adds data-group/data-checked and the
+           same always-visible checkbox (14px variant) before the label:
            <div class="sl-group-label" data-group="Marmara" data-checked="none">
+             <span class="sl-checkbox sl-group-toggle" aria-hidden="true">…✓ –…</span>
              <span class="sl-group-text">Marmara</span>
-             <span class="sl-group-toggle" aria-hidden="true">…✓…</span>
            </div> -->
       <div class="sl-option" role="option" aria-selected="false">
         <span class="sl-option-label">Istanbul</span>
@@ -103,8 +106,9 @@ ever leaks into the host page.
 | `.sl-option-media` | Leading icon/image box (`icon`/`image` fields; pointer-decorative, `aria-hidden`). Also shown in `.sl-value` in single mode |
 | `.sl-option-content` / `.sl-option-subtext` | Label + subtext column — present only on rows with icon/image/subtext; plain rows keep the flat label + check DOM |
 | `.sl-group-label` | Group heading |
-| `.sl-group-text` / `.sl-group-toggle` | Group heading parts in `selectAll: { groups: true }` mode (toggle icon is pointer-only, `aria-hidden`) |
+| `.sl-group-text` / `.sl-group-toggle` | Group heading parts in `selectAll: { groups: true }` mode (`.sl-group-toggle` is the group's 14px checkbox — pointer-only, `aria-hidden`) |
 | `.sl-select-all` | The pinned "Select all / Deselect all" header row (`selectAll`, multiple mode) |
+| `.sl-checkbox` / `.sl-checkbox-check` / `.sl-checkbox-minus` | Always-visible tri-state checkbox on toggle rows; state comes from the row's `data-checked` |
 | `.sl-empty` | No-results state |
 | `.sl-loading` / `.sl-skeleton` | Async loading skeleton |
 | `.sl-create` | The "Create …" row in tags mode |
@@ -155,7 +159,8 @@ against these:
 | `.sl-panel[data-placement="top"]` | Panel opened upward |
 | `.sl-select-all[aria-selected="true"]` | Every filtered enabled option is selected |
 | `.sl-select-all[data-active]` | Select-all header is the active (highlighted) row |
-| `.sl-group-label[data-checked="all"/"some"/"none"]` | Group toggle state (`selectAll: { groups: true }`) |
+| `.sl-select-all[data-checked="all"/"some"/"none"]` | Header checkbox tri-state (all / indeterminate / empty) |
+| `.sl-group-label[data-checked="all"/"some"/"none"]` | Group toggle checkbox tri-state (`selectAll: { groups: true }`) |
 
 Example — bold the selected option:
 

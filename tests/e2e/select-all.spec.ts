@@ -26,6 +26,9 @@ test.describe("#multi — select-all header row", () => {
     await expect(w.selectAllRow).toBeVisible();
     await expect(w.selectAllRow).toHaveText("Tümünü seç");
     await expect(w.selectAllRow).toHaveAttribute("aria-selected", "false");
+    // permanent checkbox affordance: visible and indeterminate (js+ts preselected)
+    await expect(w.selectAllRow.locator(".sl-checkbox")).toBeVisible();
+    await expect(w.selectAllRow).toHaveAttribute("data-checked", "some");
 
     await w.selectAllRow.click();
     await expect(w.chips).toHaveCount(9);
@@ -33,6 +36,7 @@ test.describe("#multi — select-all header row", () => {
     expect(await changeCount(page, "multi")).toBe(1); // single native change
     await expect(w.selectAllRow).toHaveText("Tümünü kaldır");
     await expect(w.selectAllRow).toHaveAttribute("aria-selected", "true");
+    await expect(w.selectAllRow).toHaveAttribute("data-checked", "all");
     await expectOpen(w); // toggling all keeps the panel open
 
     // deselect path: one more click, one more change event
@@ -41,6 +45,9 @@ test.describe("#multi — select-all header row", () => {
     expect(await nativeSelected(page, "multi")).toEqual([]);
     expect(await changeCount(page, "multi")).toBe(2);
     await expect(w.selectAllRow).toHaveText("Tümünü seç");
+    await expect(w.selectAllRow).toHaveAttribute("data-checked", "none");
+    // the checkbox never disappears — empty square is the resting affordance
+    await expect(w.selectAllRow.locator(".sl-checkbox")).toBeVisible();
   });
 
   test("toggle respects the active query (filtered subset only)", async ({ page }) => {
@@ -95,6 +102,9 @@ test.describe("#grouped-multi — per-group toggles", () => {
     const marmara = w.groupLabels.filter({ hasText: "Marmara" });
     const ege = w.groupLabels.filter({ hasText: "Ege" });
     await expect(marmara).toHaveAttribute("data-checked", "none");
+    // permanent affordance: the checkbox square is visible even at "none"
+    await expect(marmara.locator(".sl-checkbox")).toBeVisible();
+    await expect(ege.locator(".sl-checkbox")).toBeVisible();
 
     await marmara.click();
     await expect(w.chips).toHaveText(["İstanbul", "Bursa", "Kocaeli"]);

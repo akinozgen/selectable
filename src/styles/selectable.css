@@ -666,34 +666,78 @@
   background-color: var(--sl-muted);
 }
 
+/* ---------- TRI-STATE ONAY KUTUSU (selectAll göstergesi) ---------- */
+
+/* KALICI affordance kuralı: tıklanabilir satırın göstergesi her durumda
+   görünür — hover'a ya da seçime bağlı görünürlük yok. Pointer-only span
+   (aria-hidden); üç durumu satırdaki data-checked sürer:
+   none = boş kutu, some = eksi (indeterminate), all = dolu + check. */
+.sl-checkbox {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  inline-size: 1rem;       /* 16px kutu (select-all başlığı) */
+  block-size: 1rem;
+  border: 1px solid var(--sl-border);
+  border-radius: var(--sl-radius-xs);
+  background-color: transparent;
+  color: var(--sl-accent-fg);   /* glif rengi: accent dolgu üzerinde */
+  transition:
+    background-color 120ms var(--sl-ease-out),
+    border-color 120ms var(--sl-ease-out);
+}
+
+/* İki glif üst üste bindirilir; görünürlüğü data-checked seçer */
+.sl-checkbox svg {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  opacity: 0;
+}
+
+[data-checked="all"] .sl-checkbox,
+[data-checked="some"] .sl-checkbox {
+  background-color: var(--sl-accent);
+  border-color: var(--sl-accent);
+}
+
+[data-checked="all"] .sl-checkbox-check {
+  opacity: 1;
+}
+
+[data-checked="some"] .sl-checkbox-minus {
+  opacity: 1;
+}
+
+/* Satır hover'ı: data-checked yalnızca tıklanabilir toggle satırlarında
+   (select-all başlığı + toggle modundaki grup başlıkları) bulunur */
+[data-checked]:hover {
+  background-color: var(--sl-muted);
+}
+
 /* ---------- GRUP TOGGLE (selectAll: { groups: true }) ---------- */
 
-/* data-checked yalnızca toggle modundaki grup başlıklarında bulunur */
+/* data-checked yalnızca toggle modundaki grup başlıklarında bulunur;
+   düz gruplar (mod kapalı) görsel olarak aynen kalır */
 .sl-group-label[data-checked] {
   display: flex;
   align-items: center;
   gap: var(--sl-space-2);
+  border-radius: var(--sl-radius-sm);
   cursor: pointer;
 }
 
+/* Grup onay kutusu: 14px varyant (.sl-checkbox ile aynı elemanda) */
 .sl-group-toggle {
-  display: inline-flex;
-  flex: none;
-}
-
-/* İkon durumu: full / yarım / gizli — 14px check */
-.sl-group-toggle .sl-check {
   inline-size: 0.875rem;
   block-size: 0.875rem;
-  transition: opacity 120ms var(--sl-ease-out);
 }
 
-[data-checked="all"] .sl-check {
-  opacity: 1;
-}
-
-[data-checked="some"] .sl-check {
-  opacity: 0.5;
+.sl-group-toggle svg {
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
 }
 
 /* ---------- HAREKET ---------- */
@@ -762,6 +806,16 @@
   .sl-create[data-active],
   .sl-select-all[data-active] {
     background-color: Highlight;
+    color: HighlightText;
+  }
+  .sl-checkbox {
+    border-color: CanvasText;
+    background-color: Canvas;
+  }
+  [data-checked="all"] .sl-checkbox,
+  [data-checked="some"] .sl-checkbox {
+    background-color: Highlight;
+    border-color: Highlight;
     color: HighlightText;
   }
   [data-active] .sl-check {

@@ -68,6 +68,13 @@ describe("selectAll — opt-in & visibility", () => {
     expect(selectAllRow()!.id).toMatch(/-select-all$/);
     expect(selectAllRow()!.getAttribute("role")).toBe("option");
     expect(selectAllRow()!.textContent).toContain("Select all");
+    // permanent affordance: the tri-state checkbox is always in the row
+    const box = selectAllRow()!.querySelector(".sl-checkbox")!;
+    expect(box).toBeTruthy();
+    expect(box.getAttribute("aria-hidden")).toBe("true");
+    expect(box.querySelector(".sl-checkbox-check")).toBeTruthy();
+    expect(box.querySelector(".sl-checkbox-minus")).toBeTruthy();
+    expect(selectAllRow()!.getAttribute("data-checked")).toBe("none");
   });
 
   it("is absent without opt-in", () => {
@@ -108,11 +115,27 @@ describe("selectAll — toggle semantics", () => {
     expect(Array.from(select.selectedOptions).map((o) => o.value)).toEqual([
       "js", "ts", "css", "html",
     ]);
-    // header flips to the deselect state
+    // header flips to the deselect state; checkbox fills
     expect(selectAllRow()!.textContent).toContain("Deselect all");
     expect(selectAllRow()!.getAttribute("aria-selected")).toBe("true");
+    expect(selectAllRow()!.getAttribute("data-checked")).toBe("all");
     vi.advanceTimersByTime(200);
     expect(live().textContent).toBe("4 selected");
+  });
+
+  it("header checkbox is tri-state: none → some → all", () => {
+    const select = makeSelect(MULTI);
+    const inst = new Selectable(select, { selectAll: true, search: false });
+    inst.open();
+    expect(selectAllRow()!.getAttribute("data-checked")).toBe("none");
+
+    options().find((o) => o.dataset.value === "js")!.click();
+    expect(selectAllRow()!.getAttribute("data-checked")).toBe("some");
+    expect(selectAllRow()!.getAttribute("aria-selected")).toBe("false");
+
+    selectAllRow()!.click(); // completes the selection
+    expect(selectAllRow()!.getAttribute("data-checked")).toBe("all");
+    expect(inst.value).toEqual(["js", "ts", "css", "html"]);
   });
 
   it("deselect path removes all filtered values with one click", () => {
@@ -268,12 +291,18 @@ describe("selectAll — group toggles", () => {
     expect(inst.value).toEqual(["35", "09"]);
   });
 
-  it("group headers carry a pointer-only icon, no buttons or tabindex", () => {
+  it("group headers carry a permanent pointer-only checkbox, no buttons or tabindex", () => {
     const select = makeSelect(GROUPED);
     const inst = new Selectable(select, { selectAll: { groups: true }, search: false });
     inst.open();
     const g = groupLabel("Marmara");
-    expect(g.querySelector(".sl-group-toggle")?.getAttribute("aria-hidden")).toBe("true");
+    const toggle = g.querySelector(".sl-group-toggle")!;
+    expect(toggle.getAttribute("aria-hidden")).toBe("true");
+    // the toggle IS the tri-state checkbox, leading the label, always present
+    expect(toggle.classList.contains("sl-checkbox")).toBe(true);
+    expect(g.firstElementChild).toBe(toggle);
+    expect(toggle.querySelector(".sl-checkbox-check")).toBeTruthy();
+    expect(toggle.querySelector(".sl-checkbox-minus")).toBeTruthy();
     expect(g.querySelector("button")).toBeNull();
     expect(g.hasAttribute("tabindex")).toBe(false);
   });
@@ -285,6 +314,7 @@ describe("selectAll — group toggles", () => {
     const g = document.querySelector<HTMLElement>(".sl-group-label")!;
     expect(g.dataset.group).toBeUndefined();
     expect(g.hasAttribute("data-checked")).toBe(false);
+    expect(g.querySelector(".sl-checkbox")).toBeNull(); // no checkbox, no hover affordance
     g.click();
     expect(inst.value).toEqual([]);
   });

@@ -889,16 +889,20 @@ export class Selectable<T = unknown> {
         s.activeIndex === SELECT_ALL_INDEX && this.selectAllVisible();
       if (this.cfg.selectAll) {
         const targets = this.selectAllTargets();
-        const all =
-          targets.length > 0 &&
-          targets.every((o) => s.selected.includes(o.value));
+        const picked = targets.filter((o) => s.selected.includes(o.value)).length;
+        const checked =
+          targets.length > 0 && picked === targets.length
+            ? "all"
+            : picked > 0
+              ? "some"
+              : "none";
         this.list.setSelectAll(
           targets.length > 0
-            ? all
+            ? checked === "all"
               ? this.cfg.messages.deselectAll
               : this.cfg.messages.selectAll
             : null,
-          { all, active: onSelectAll },
+          { checked, active: onSelectAll },
         );
       }
 

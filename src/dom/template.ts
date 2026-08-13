@@ -39,6 +39,9 @@ function svg(pathD: string, cls: string, strokeWidth = 1.5): SVGSVGElement {
 export const icons = {
   chevron: () => svg("M4 6l4 4 4-4", "sl-chevron-svg"),
   check: () => svg("M3 8.5l3.5 3.5L13 5", "sl-check", 1.75),
+  // Tri-state checkbox glyphs (drawn on the accent fill, hence the weight)
+  checkboxCheck: () => svg("M3 8.5l3.5 3.5L13 5", "sl-checkbox-check", 2.25),
+  checkboxMinus: () => svg("M3.5 8h9", "sl-checkbox-minus", 2.25),
   cross: () => svg("M4.5 4.5l7 7M11.5 4.5l-7 7", "sl-cross-svg"),
   search: () =>
     svg("M11 11l3 3M12.5 7a5.5 5.5 0 11-11 0 5.5 5.5 0 0111 0z", "sl-search-svg"),

@@ -40,6 +40,22 @@ export interface BuildConfig {
   messages: SelectableMessages;
 }
 
+/**
+ * Pointer-only tri-state checkbox visual for clickable toggle rows. Always
+ * visible (project rule: clickable rows carry a PERMANENT indicator, never
+ * hover-only). aria-hidden — the row's aria-selected carries the semantics;
+ * the empty/minus/check state is driven by data-checked on the row via CSS.
+ */
+function checkbox(extraClass?: string): HTMLElement {
+  const box = el(
+    "span",
+    extraClass ? `sl-checkbox ${extraClass}` : "sl-checkbox",
+    { "aria-hidden": "true" },
+  );
+  box.append(icons.checkboxCheck(), icons.checkboxMinus());
+  return box;
+}
+
 /** Builds the static skeleton per docs/guide/anatomy.md and wraps the native select. */
 export function buildSkeleton(
   select: HTMLSelectElement,
@@ -122,9 +138,10 @@ export function buildSkeleton(
       role: "option",
       id: `${cfg.baseId}-select-all`,
       "aria-selected": "false",
+      "data-checked": "none",
     });
     const label = el("span", "sl-option-label");
-    selectAllRow.append(label, icons.check());
+    selectAllRow.append(checkbox(), label);
     selectAllRow.hidden = true;
     listbox.appendChild(selectAllRow);
   }
@@ -415,12 +432,16 @@ export class ListRenderer<T> {
   }
 
   /**
-   * Shows/hides the "select all" header row. `all` mirrors "every filtered
-   * enabled option is selected" (aria-selected); `active` = keyboard highlight.
+   * Shows/hides the "select all" header row. `checked` is the tri-state over
+   * the filtered enabled options (drives the checkbox visual via data-checked;
+   * "all" also mirrors into aria-selected); `active` = keyboard highlight.
    * The row is sticky above the virtual window, so the window (.sl-vlist) is
    * pushed down by the row's height while it is visible.
    */
-  setSelectAll(label: string | null, state: { all: boolean; active: boolean }): void {
+  setSelectAll(
+    label: string | null,
+    state: { checked: "all" | "some" | "none"; active: boolean },
+  ): void {
     const node = this.refs.selectAllRow;
     if (!node) return;
     if (label === null) {
@@ -432,8 +453,9 @@ export class ListRenderer<T> {
       return;
     }
     node.hidden = false;
-    node.firstElementChild!.textContent = label;
-    node.setAttribute("aria-selected", String(state.all));
+    node.querySelector(".sl-option-label")!.textContent = label;
+    node.setAttribute("data-checked", state.checked);
+    node.setAttribute("aria-selected", String(state.checked === "all"));
     if (state.active) node.setAttribute("data-active", "");
     else node.removeAttribute("data-active");
     const h = node.offsetHeight;
@@ -525,15 +547,15 @@ export class ListRenderer<T> {
       const g = el("div", "sl-group-label", { role: "presentation" });
       if (this.cfg.groupToggles) {
         // Pointer-only group toggle (same pattern as .sl-chip-remove): the
-        // check icon is decorative, the row itself is the click target.
-        // Keyboard path stays options + select-all header + Ctrl(+Shift)+A.
+        // leading tri-state checkbox is decorative but ALWAYS visible — the
+        // permanent affordance that the row is clickable. Click target is
+        // the whole row. Keyboard path stays options + select-all header
+        // + Ctrl(+Shift)+A.
         g.dataset.group = row.label;
         g.setAttribute("data-checked", this.groupChecked(row.label));
         const text = el("span", "sl-group-text");
         text.textContent = row.label;
-        const toggle = el("span", "sl-group-toggle", { "aria-hidden": "true" });
-        toggle.appendChild(icons.check());
-        g.append(text, toggle);
+        g.append(checkbox("sl-group-toggle"), text);
       } else {
         g.textContent = row.label;
       }

@@ -273,12 +273,18 @@ new Selectable("#cities", { selectAll: { groups: true } }); // + group toggles
   is also a shortcut: `Ctrl+A` when focus is on the trigger (no-search mode);
   in search mode `Ctrl+A` keeps its native select-the-text meaning inside the
   input, so use `Ctrl+Shift+A` instead.
+- **Tri-state checkbox indicator**: the header row carries an always-visible
+  checkbox that mirrors the state of the filtered enabled options — empty
+  (none selected), a minus bar (some), filled with a check (all). It is a
+  pointer-only visual (`aria-hidden`); the row's `aria-selected` carries the
+  semantics.
 - **`{ groups: true }`** additionally makes each group header a toggle for
   *that group's* filtered enabled options (same semantics, same single-event
-  guarantee). The header gets `data-checked="all" | "some" | "none"` for
-  styling and a pointer-only check icon. Per-group keyboard access is out of
-  scope by design — the keyboard path is the options themselves plus the
-  select-all header row.
+  guarantee). The header gets the same always-visible tri-state checkbox
+  (14px variant) before its label, driven by
+  `data-checked="all" | "some" | "none"` for styling. Per-group keyboard
+  access is out of scope by design — the keyboard path is the options
+  themselves plus the select-all header row.
 - **Async caveat**: with an async `source`, "all" means the options loaded so
   far for the current query. While `hasMore` is `true` more pages exist on the
   server, so a select-all is inherently partial — by design.

@@ -76,7 +76,7 @@ A string selector enhances **all** matches (returned instance = first match; oth
 | `closeOnSelect` | `boolean` | `!multiple` | Close panel after selecting. |
 | `selectOnTab` | `boolean` | `false` | Tab commits the active option before closing. |
 | `maxSelections` | `number` | `Infinity` | Multi-mode selection cap (announces via live region). |
-| `selectAll` | `boolean \| { groups?: boolean }` | `false` | Multi-mode only (warns + ignored otherwise). Pinned "Select all/Deselect all" header row; toggles the **filtered enabled** options in ONE change event, respecting `maxSelections`. `{ groups: true }` also makes group headers per-group toggles (`data-checked="all\|some\|none"`, pointer-only). |
+| `selectAll` | `boolean \| { groups?: boolean }` | `false` | Multi-mode only (warns + ignored otherwise). Pinned "Select all/Deselect all" header row; toggles the **filtered enabled** options in ONE change event, respecting `maxSelections`. `{ groups: true }` also makes group headers per-group toggles. Both rows show an always-visible tri-state checkbox (empty/minus/check) driven by `data-checked="all\|some\|none"`; the checkbox spans are pointer-only (`aria-hidden`). |
 | `tags` | `boolean \| { create?(label) => SelectableOption }` | `false` | Free-text option creation from the search query. Needs search (auto-enabled). |
 | `size` | `"sm" \| "md" \| "lg"` | `"md"` | Control size (token-driven). |
 | `density` | `"compact" \| "normal" \| "comfortable"` | `"normal"` (comfortable auto on touch) | Option row height axis, independent of size. |
@@ -201,11 +201,12 @@ Dark theme: set `data-sl-theme="dark"` on any ancestor (or the instance via `the
 ├─ .sl-panel [popover=manual] [data-placement=bottom|top]
 │  ├─ .sl-search → input.sl-search-input   (search mode only)
 │  └─ .sl-listbox [role=listbox]
-│     ├─ .sl-select-all [role=option] [aria-selected] [data-active]   (selectAll, pinned header row)
+│     ├─ .sl-select-all [role=option] [aria-selected] [data-active] [data-checked=all|some|none]
+│     │    (selectAll, pinned header row: .sl-checkbox always-visible tri-state indicator + .sl-option-label)
 │     ├─ .sl-group-label / .sl-option [role=option] [aria-selected] [data-active]
 │     │    (plain option: .sl-option-label + .sl-check;
 │     │     with icon/image/subtext: [.sl-option-media (i|img)] + .sl-option-content (.sl-option-label + .sl-option-subtext) + .sl-check)
-│     │    (selectAll groups mode: .sl-group-label[data-group][data-checked=all|some|none] → .sl-group-text + .sl-group-toggle)
+│     │    (selectAll groups mode: .sl-group-label[data-group][data-checked=all|some|none] → .sl-checkbox.sl-group-toggle + .sl-group-text)
 │     ├─ .sl-empty / .sl-loading / .sl-create ("Create …" row, tags mode)
 └─ .sl-live                    (polite live region)
 .sl-portal                     (body-level root, only in non-Popover fallback)
