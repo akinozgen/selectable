@@ -33,8 +33,8 @@ Eski:
 Yeni:
 
 ```js
-import { Selectable } from "selectablejs";
-import "selectablejs/css";
+import { Selectable } from "@akinozgen17/selectablejs";
+import "@akinozgen17/selectablejs/css";
 ```
 
 (CDN kullanıyorsanız: `dist/selectable.css` + `dist/selectable.global.js`;
@@ -59,7 +59,7 @@ global ad alanı `window.Selectable`, sınıf `Selectable.Selectable`.)
 | `templateResult` | `render.option` | jQuery nesnesi değil `Node \| string` döner. String **metin** olarak basılır (XSS-güvenli); HTML için Node üretin — `escapeMarkup` gerekmez. |
 | `templateSelection` | `render.selection` | Fark: select2 seçim *başına* çağırır, Selectable **tüm seçimi** tek çağrıda verir (`selected[]`). |
 | `matcher` | `search.filter` | İmza: `(option, query) => boolean`. Varsayılan filtre zaten aksan/harf toleranslı (İ/ı dahil). |
-| `language: "tr"` | `i18n: tr` | `import { tr } from "selectablejs"` — ayrı dil dosyası yüklenmez. |
+| `language: "tr"` | `i18n: tr` | `import { tr } from "@akinozgen17/selectablejs"` — ayrı dil dosyası yüklenmez. |
 | `closeOnSelect` | `closeOnSelect` | Aynı varsayılan mantık: teklide kapanır, çokluda açık kalır. |
 | `selectOnClose` | `selectOnTab` | Yakın ama daha dar: yalnız `Tab` ile çıkışta seçer; her kapanışta değil. |
 | `disabled` | `disabled` | Birebir; sonradan `enable()`/`disable()`. |
@@ -132,8 +132,8 @@ abonelik iptali için fonksiyon döndürür.
 ```
 
 ```js
-import { Selectable, asyncSource, tr } from "selectablejs";
-import "selectablejs/css";
+import { Selectable, asyncSource, tr } from "@akinozgen17/selectablejs";
+import "@akinozgen17/selectablejs/css";
 
 const sel = new Selectable("#kisi", {
   placeholder: "Kişi ara…",

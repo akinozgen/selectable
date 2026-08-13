@@ -9,12 +9,12 @@ Framework-agnostic, zero-dependency select/dropdown that **enhances an existing 
 ## Install
 
 ```bash
-npm install selectablejs   # not yet published — until then: npm install <git-url-or-local-path>
+npm install @akinozgen17/selectablejs   # not yet published — until then: npm install <git-url-or-local-path>
 ```
 
 ```js
-import { Selectable } from "selectablejs";
-import "selectablejs/css"; // REQUIRED — without it the component is unstyled
+import { Selectable } from "@akinozgen17/selectablejs";
+import "@akinozgen17/selectablejs/css"; // REQUIRED — without it the component is unstyled
 ```
 
 CDN / no-bundler (IIFE, exposes a **namespace** `window.Selectable`):
@@ -40,8 +40,8 @@ CDN / no-bundler (IIFE, exposes a **namespace** `window.Selectable`):
 ```
 
 ```js
-import { Selectable } from "selectablejs";
-import "selectablejs/css";
+import { Selectable } from "@akinozgen17/selectablejs";
+import "@akinozgen17/selectablejs/css";
 
 const sel = new Selectable("#city", { clearable: true });
 sel.on("change", ({ value, options }) => console.log(value)); // value: string[]
@@ -201,8 +201,8 @@ State styling uses attributes (`[data-state="open"]`, `[aria-selected="true"]`, 
 ### 1. Basic single select
 
 ```js
-import { Selectable } from "selectablejs";
-import "selectablejs/css";
+import { Selectable } from "@akinozgen17/selectablejs";
+import "@akinozgen17/selectablejs/css";
 const sel = new Selectable("#plan", { clearable: true });
 sel.on("change", ({ value }) => console.log(value[0] ?? null));
 ```
@@ -241,7 +241,7 @@ sel.on("create", ({ option }) => console.log("created", option.value));
 ### 5. Remote data (async)
 
 ```js
-import { Selectable, asyncSource } from "selectablejs";
+import { Selectable, asyncSource } from "@akinozgen17/selectablejs";
 new Selectable("#user", {
   source: asyncSource(
     async (query, { signal }) => {
@@ -311,7 +311,7 @@ onBeforeUnmount(() => sel?.destroy());
 
 - **No `dropdownParent`, no `zIndex` option — on purpose.** The panel lives in the browser top layer (Popover API); it can never be clipped by `overflow` or buried under a modal. The non-Popover fallback portals to `<body>` automatically.
 - **Constructor throws if the select is already enhanced.** Call `destroy()` first, or use `Selectable.upgrade()` / `Selectable.getInstance()` which are idempotent.
-- **CSS import is mandatory** (`import "selectablejs/css"` or `dist/selectable.css`); otherwise the component renders unstyled.
+- **CSS import is mandatory** (`import "@akinozgen17/selectablejs/css"` or `dist/selectable.css`); otherwise the component renders unstyled.
 - **IIFE global is a namespace**: `window.Selectable.Selectable` is the class; `Selectable.asyncSource`, `Selectable.tr` etc. sit beside it.
 - **Livewire/htmx DOM morph**: wrap in `wire:ignore` (or re-run `Selectable.upgrade()` after swaps). External mutations to the native select are otherwise picked up automatically via MutationObserver — manual `refresh()` is almost never needed.
 - **`form.reset()` is supported natively** — selection snaps back to the markup's `selected` attributes, no code needed.

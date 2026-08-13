@@ -6,7 +6,7 @@ Hiçbir seçenek zorunlu değildir — vermediğiniz her şey native `<select>`'
 türetilir.
 
 ```js
-import { Selectable } from "selectablejs";
+import { Selectable } from "@akinozgen17/selectablejs";
 const sel = new Selectable("#sehir", { /* seçenekler */ });
 ```
 
@@ -66,7 +66,7 @@ new Selectable("#sehir", {
 **3. Uzak veri — `asyncSource(fetcher)`:**
 
 ```js
-import { Selectable, asyncSource } from "selectablejs";
+import { Selectable, asyncSource } from "@akinozgen17/selectablejs";
 
 new Selectable("#kullanici", {
   source: asyncSource(
@@ -243,7 +243,7 @@ Tüm kullanıcıya görünen metinler mesaj sözlüğünden gelir. Türkçe pake
 hazırdır:
 
 ```js
-import { Selectable, tr } from "selectablejs";
+import { Selectable, tr } from "@akinozgen17/selectablejs";
 new Selectable("#sehir", { i18n: tr });
 // veya nokta atışı:
 new Selectable("#sehir", { i18n: { noResults: "Bulunamadı", placeholder: "Seçin…" } });

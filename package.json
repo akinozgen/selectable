@@ -1,5 +1,8 @@
 {
-  "name": "selectablejs",
+  "name": "@akinozgen17/selectablejs",
+  "publishConfig": {
+    "access": "public"
+  },
   "version": "0.1.0",
   "description": "Framework-agnostic, zero-dependency, premium select component. Flexible like select2, featureful like bootstrap-select, unbreakable design.",
   "type": "module",

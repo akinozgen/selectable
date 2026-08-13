@@ -8,7 +8,7 @@ geliştirmiş ve seçim değişikliklerini dinleyen çalışan bir kurulumunuz o
 ### npm
 
 ```bash
-npm install selectablejs   # (yakında npm'de yayınlanacak)
+npm install @akinozgen17/selectablejs   # (yakında npm'de yayınlanacak)
 ```
 
 Paket henüz yayınlanmadığı için şimdilik git deposundan veya yerel klondan
@@ -23,11 +23,11 @@ npm install ../selectable
 Sonra projenizde:
 
 ```js
-import { Selectable } from "selectablejs";
-import "selectablejs/css"; // zorunlu — CSS import edilmezse bileşen stilsiz kalır
+import { Selectable } from "@akinozgen17/selectablejs";
+import "@akinozgen17/selectablejs/css"; // zorunlu — CSS import edilmezse bileşen stilsiz kalır
 ```
 
-`selectablejs/css` tek dosyadır (`dist/selectable.css`): token'lar + bileşen
+`@akinozgen17/selectablejs/css` tek dosyadır (`dist/selectable.css`): token'lar + bileşen
 stilleri. Yalnızca token katmanını isterseniz `dist/tokens.css` ayrıca vardır.
 
 ### CDN / bundler'sız
@@ -69,8 +69,8 @@ geliştirir. Markup'ınız neyse o kalır:
 ```
 
 ```js
-import { Selectable } from "selectablejs";
-import "selectablejs/css";
+import { Selectable } from "@akinozgen17/selectablejs";
+import "@akinozgen17/selectablejs/css";
 
 const sel = new Selectable("#sehir", { clearable: true });
 
@@ -123,8 +123,8 @@ geliştirme yapabilirsiniz:
 ```
 
 ```js
-import { Selectable } from "selectablejs";
-import "selectablejs/css";
+import { Selectable } from "@akinozgen17/selectablejs";
+import "@akinozgen17/selectablejs/css";
 
 Selectable.upgrade();                       // document altındaki tümü
 Selectable.upgrade(container, { size: "sm" }); // kök + ortak varsayılanlar

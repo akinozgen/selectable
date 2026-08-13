@@ -36,8 +36,8 @@ Eski:
 Yeni:
 
 ```js
-import { Selectable } from "selectablejs";
-import "selectablejs/css";
+import { Selectable } from "@akinozgen17/selectablejs";
+import "@akinozgen17/selectablejs/css";
 ```
 
 Bootstrap'i sayfanızın geri kalanı için tutabilirsiniz — Selectable ona
@@ -178,8 +178,8 @@ new Selectable("#uye", {
 ```
 
 ```js
-import { Selectable, tr } from "selectablejs";
-import "selectablejs/css";
+import { Selectable, tr } from "@akinozgen17/selectablejs";
+import "@akinozgen17/selectablejs/css";
 
 const sel = new Selectable("#iller", {
   placeholder: "İl seçin…",   // ← title

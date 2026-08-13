@@ -2,7 +2,7 @@
 
 A framework-agnostic, zero-dependency select component. As flexible as select2, as featureful as bootstrap-select — without jQuery, without Bootstrap, and with a design that doesn't break no matter what CSS the host page ships.
 
-[![npm](https://img.shields.io/npm/v/selectablejs)](https://www.npmjs.com/package/selectablejs)
+[![npm](https://img.shields.io/npm/v/%40akinozgen17%2Fselectablejs)](https://www.npmjs.com/package/@akinozgen17/selectablejs)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 ## Why
@@ -17,19 +17,19 @@ A framework-agnostic, zero-dependency select component. As flexible as select2, 
 ## Install
 
 ```bash
-npm install selectablejs
+npm install @akinozgen17/selectablejs
 ```
 
 ```js
-import { Selectable } from "selectablejs";
-import "selectablejs/css"; // required — tokens + component styles
+import { Selectable } from "@akinozgen17/selectablejs";
+import "@akinozgen17/selectablejs/css"; // required — tokens + component styles
 ```
 
 Or from a CDN, with no build step (global namespace `window.Selectable`):
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/selectablejs/dist/selectable.css">
-<script src="https://unpkg.com/selectablejs/dist/selectable.global.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@akinozgen17/selectablejs/dist/selectable.css">
+<script src="https://unpkg.com/@akinozgen17/selectablejs/dist/selectable.global.js"></script>
 <script>
   new Selectable.Selectable("#city"); // namespace + class
 </script>
@@ -73,7 +73,7 @@ Search is locale-aware and diacritic-tolerant out of the box, and turns on autom
 ### Remote data
 
 ```js
-import { Selectable, asyncSource } from "selectablejs";
+import { Selectable, asyncSource } from "@akinozgen17/selectablejs";
 
 new Selectable("#user", {
   source: asyncSource(async (query, { signal }) => {
