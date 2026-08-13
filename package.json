@@ -3,7 +3,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Framework-agnostic, zero-dependency, premium select component. Flexible like select2, featureful like bootstrap-select, unbreakable design.",
   "type": "module",
   "repository": {
