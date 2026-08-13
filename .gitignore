@@ -2,3 +2,8 @@ node_modules/
 dist/
 *.log
 .DS_Store
+
+# ic calisma dokumanlari (agent raporlari) repoya girmez
+docs/research/
+docs/KARARLAR.md
+docs/ANATOMI.md
