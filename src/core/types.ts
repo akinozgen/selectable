@@ -77,6 +77,11 @@ export interface SelectableOptions<T = unknown> {
   closeOnSelect?: boolean;
   selectOnTab?: boolean;
   maxSelections?: number;
+  /**
+   * Panel height as a number of visible option rows before scrolling
+   * (like bootstrap-select's `size`). Default: token cap (~8 rows).
+   */
+  visibleOptions?: number;
   size?: "sm" | "md" | "lg";
   density?: "compact" | "normal" | "comfortable";
   theme?: "light" | "dark" | "auto" | "inherit";

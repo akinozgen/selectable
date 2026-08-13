@@ -352,3 +352,50 @@ describe("Selectable — async source", () => {
     expect(onError).toHaveBeenCalled();
   });
 });
+
+describe("Selectable — çoklu selector ve panel boyutu", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("class selector'ı eşleşen TÜM select'leri geliştirir", () => {
+    document.body.innerHTML = `
+      <select class="pick"><option value="1">Bir</option></select>
+      <select class="pick"><option value="2">İki</option></select>
+      <div class="pick"></div>`;
+    const first = new Selectable(".pick");
+    expect(document.querySelectorAll(".sl").length).toBe(2);
+    const selects = Array.from(document.querySelectorAll("select"));
+    expect(Selectable.getInstance(selects[0]!)).toBe(first);
+    expect(Selectable.getInstance(selects[1]!)).toBeTruthy();
+    // tekrar çağrı idempotent: enhanced olanlar atlanır, ilki zaten sarılı → throw
+    expect(() => new Selectable(".pick")).toThrow(/already enhanced/);
+    expect(document.querySelectorAll(".sl").length).toBe(2);
+  });
+
+  it("visibleOptions panel yükseklik token'ını yazar (arama paylı)", () => {
+    document.body.innerHTML = `<select id="s"><option value="1">Bir</option></select>`;
+    new Selectable("#s", { visibleOptions: 5, search: true });
+    const root = document.querySelector<HTMLElement>(".sl")!;
+    const v = root.style.getPropertyValue("--sl-panel-max-h");
+    expect(v).toContain("5 * var(--sl-option-h)");
+    expect(v).toContain("2.3rem");
+  });
+
+  it("virtual eşiği 50: 60 seçenekte pencereli render devrede", () => {
+    const select = document.createElement("select");
+    for (let i = 0; i < 60; i++) {
+      const o = document.createElement("option");
+      o.value = String(i);
+      o.textContent = `Kayıt ${i}`;
+      select.appendChild(o);
+    }
+    document.body.appendChild(select);
+    const inst = new Selectable(select, { search: false });
+    inst.open();
+    // jsdom'da clientHeight=0 → pencere yalnızca overscan kadar render eder;
+    // 60 << tam liste, virtualization aktif demektir
+    const rendered = document.querySelectorAll(".sl-option").length;
+    expect(rendered).toBeLessThan(60);
+  });
+});

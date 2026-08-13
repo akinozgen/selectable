@@ -53,6 +53,8 @@ Options, groups, selection, `multiple`, `disabled` are all read from the native 
 
 `new Selectable(target: HTMLSelectElement | string, options?: SelectableOptions)`
 
+A string selector enhances **all** matches (returned instance = first match; others via `Selectable.getInstance(el)`).
+
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `source` | `SelectableOption[] \| AsyncDataSource` | read from native `<select>` | Data. Pass `asyncSource(fetcher)` for remote data (server-side filtering). |
@@ -80,7 +82,8 @@ Options, groups, selection, `multiple`, `disabled` are all read from the native 
 | `render.selection` | `(selected: SelectableOption[]) => Node \| string` | built-in | Custom trigger value template. |
 | `render.noResults` | `(query) => Node \| string` | i18n text | Custom empty state. |
 | `i18n` | `Partial<SelectableMessages>` | English | Message overrides; `tr` pack exported. |
-| `virtual` | `boolean \| { optionHeight?, overscan? }` | auto above 100 options | `false` disables; object forces virtualization on (`overscan` default 6; row height is measured automatically — `optionHeight` currently unused). |
+| `virtual` | `boolean \| { optionHeight?, overscan? }` | auto above 50 options | `false` disables; object forces virtualization on (`overscan` default 6; row height is measured automatically — `optionHeight` currently unused). |
+| `visibleOptions` | `number` | token cap (~8 rows) | Panel height in option rows before scrolling (bootstrap-select `size` equivalent). |
 
 `SelectableOption`: `{ value: string; label: string; disabled?: boolean; group?: string; data?: T }`. Native `<option data-*>` attributes land in `data`.
 

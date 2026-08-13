@@ -2,8 +2,10 @@
 
 All options are passed as the second argument of
 `new Selectable(target, options)`. The target is an `HTMLSelectElement` or a
-CSS selector. No option is required — everything you omit is derived from the
-native `<select>`.
+CSS selector. A selector enhances **every** matching select in one call — the
+returned instance wraps the first match; grab the others with
+`Selectable.getInstance(el)`. No option is required — everything you omit is
+derived from the native `<select>`.
 
 ```js
 import { Selectable } from "@akinozgen17/selectablejs";
@@ -24,6 +26,7 @@ const sel = new Selectable("#city", { /* options */ });
 | [`closeOnSelect`](#closeonselect) | `boolean` | `!multiple` | Close after selecting |
 | [`selectOnTab`](#selectontab) | `boolean` | `false` | Tab commits the active option |
 | [`maxSelections`](#maxselections) | `number` | `Infinity` | Multi-select cap |
+| [`visibleOptions`](#visibleoptions) | `number` | token cap (~8 rows) | Panel height in option rows before scrolling |
 | [`tags`](#tags) | `boolean \| TagsConfig` | `false` | Create options from free text |
 | [`size`](#size--density) | `"sm" \| "md" \| "lg"` | `"md"` | Control size |
 | [`density`](#size--density) | `"compact" \| "normal" \| "comfortable"` | `"normal"` | Row density |
@@ -31,7 +34,7 @@ const sel = new Selectable("#city", { /* options */ });
 | [`positioning`](#positioning) | `PositioningConfig` | `{}` | Panel placement |
 | [`render`](#render) | `RenderConfig` | built-in | Custom templates |
 | [`i18n`](#i18n) | `Partial<SelectableMessages>` | English | Message dictionary |
-| [`virtual`](#virtual) | `boolean \| { overscan? }` | auto above 100 options | List virtualization |
+| [`virtual`](#virtual) | `boolean \| { overscan? }` | auto above 50 options | List virtualization |
 
 The option object type (`SelectableOption`):
 
@@ -154,6 +157,19 @@ fast-form-entry habit). Default `false`: `Tab` dismisses without selecting.
 Upper bound for multi-mode. At the limit, further picks are refused and the
 condition is announced to screen readers (the `i18n.maxReached` message).
 
+## `visibleOptions`
+
+Caps the panel height at N option rows (plus the search bar when present) so
+long lists scroll instead of stretching toward the full viewport — the
+equivalent of bootstrap-select's `size`:
+
+```js
+new Selectable("#per-page", { visibleOptions: 6 });
+```
+
+Without it the panel is capped by the `--sl-panel-max-h` token (~8 rows) and
+never exceeds the available viewport space.
+
 ## `tags`
 
 Free-text entry: when the user's query doesn't match an existing option, a
@@ -257,7 +273,7 @@ of these are screen-reader announcements).
 
 ## `virtual`
 
-List virtualization kicks in **automatically** above 100 options; `false`
+List virtualization kicks in **automatically** above 50 options; `false`
 disables it, and passing an object (e.g. `{ overscan: 10 }`) removes the
 threshold and keeps it always on. `overscan` is the number of rows kept
 rendered outside the visible window (default 6). Row height is measured

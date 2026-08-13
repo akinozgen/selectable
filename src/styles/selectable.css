@@ -34,6 +34,13 @@
   position: relative;
 }
 
+/* Native select davranışı: tekli kontrol, seçili değerin genişliğinin
+   altına ezilmez (dar flex/grid hücrelerinde "100" → "1…" kırpılmasını
+   önler). Host bilerek daraltmak isterse .sl üzerinden override edebilir. */
+.sl:not([data-multiple]) {
+  min-inline-size: fit-content;
+}
+
 :where(.sl :is(button, input), .sl-portal :is(button, input)) {
   appearance: none;
   background: transparent;

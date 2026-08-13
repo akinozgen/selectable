@@ -80,7 +80,7 @@ ever leaks into the host page.
 | `.sl-empty` | No-results state |
 | `.sl-loading` / `.sl-skeleton` | Async loading skeleton |
 | `.sl-create` | The "Create …" row in tags mode |
-| `.sl-vsizer` / `.sl-vlist` | Virtual-list internals (100+ options) |
+| `.sl-vsizer` / `.sl-vlist` | Virtual-list internals (50+ options) |
 | `.sl-live` | Screen-reader live region |
 | `.sl-offscreen` | Visual-hiding utility |
 | `.sl-portal` | Body-level fallback panel root |

@@ -84,10 +84,11 @@ export class Selectable<T = unknown> {
     target: HTMLSelectElement | string,
     options: SelectableOptions<T> = {},
   ) {
-    const select =
+    const matched =
       typeof target === "string"
-        ? document.querySelector<HTMLSelectElement>(target)
-        : target;
+        ? Array.from(document.querySelectorAll(target))
+        : [target];
+    const select = matched[0];
     if (!(select instanceof HTMLSelectElement)) {
       throw new Error(
         `[selectable] Target ${typeof target === "string" ? `"${target}"` : ""} is not a <select> element.`,
@@ -134,7 +135,7 @@ export class Selectable<T = unknown> {
         messages.placeholder,
       messages,
       virtualThreshold:
-        options.virtual === false ? Infinity : typeof options.virtual === "object" ? 0 : 100,
+        options.virtual === false ? Infinity : typeof options.virtual === "object" ? 0 : 50,
       overscan:
         typeof options.virtual === "object" ? (options.virtual.overscan ?? 6) : 6,
       tags:
@@ -188,6 +189,15 @@ export class Selectable<T = unknown> {
     this.unhideNative = hideNativeSelect(select);
     this.wireAccessibleName();
 
+    if (options.visibleOptions && options.visibleOptions > 0) {
+      // Panel cap = N option rows (+ search bar); flows to the portal too.
+      const searchPad = searchable ? " + 2.3rem" : "";
+      this.refs.root.style.setProperty(
+        "--sl-panel-max-h",
+        `calc(${options.visibleOptions} * var(--sl-option-h) + 2 * var(--sl-panel-pad)${searchPad})`,
+      );
+    }
+
     this.list = new ListRenderer<T>(this.refs, {
       baseId: this.baseId,
       multiple,
@@ -214,6 +224,14 @@ export class Selectable<T = unknown> {
     this.bind();
     this.renderTrigger();
     instances.set(select, this as Selectable);
+
+    // A string selector enhances EVERY match (one-liner ergonomics).
+    // `this` wraps the first; the rest are reachable via getInstance().
+    for (const extra of matched.slice(1)) {
+      if (extra instanceof HTMLSelectElement && !instances.has(extra)) {
+        new Selectable(extra, options);
+      }
+    }
   }
 
   /** Idempotently enhances all `select[data-selectable]` under `root`. */

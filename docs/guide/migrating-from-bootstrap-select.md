@@ -75,7 +75,7 @@ payload and are available in the `render.option` template (example below).
 | `selectedTextFormat: "count > x"` | `overflow: "counter"` | Behavioral difference: chips plus a `+N` counter chip instead of a text summary. |
 | `actionsBox` (Deselect All) | `clearable: true` / `sel.clear()` | A clear button and a method exist. |
 | `actionsBox` (Select All) | **no equivalent (v1)** | If needed: wire your own button to `sel.setValue(options.map(o => o.value))`. |
-| `size` (menu row count) | `--sl-panel-max-h` token | E.g. `.sl { --sl-panel-max-h: 12rem; }` |
+| `size` (menu row count) | `visibleOptions` | E.g. `visibleOptions: 10`; or the `--sl-panel-max-h` token via CSS. |
 | `width` / `data-width` | CSS | `.sl` is a normal block element; give it `width`/`max-width`. |
 | `style` / `styleBase` (`btn-primary`…) | token system | [theming.md](theming.md); see below for Bootstrap matching. |
 | `container: "body"` | **NOT NEEDED** | The panel is in the top layer; modal/overflow clipping is solved at the root. |
@@ -88,7 +88,7 @@ payload and are available in the `render.option` template (example below).
 | `data-icon` | `render.option` | Create the icon element in the template. |
 | `multipleSeparator` | not needed | Selections are shown as chips; there is no separator-joined text. |
 | `hideDisabled` | no equivalent | Disabled options are visible but not selectable. |
-| `virtualScroll` / `data-virtual-scroll` | `virtual` | Already automatic above 100 options. |
+| `virtualScroll` / `data-virtual-scroll` | `virtual` | Already automatic above 50 options. |
 | `mobile` | no equivalent (v1) | No automatic native-fallback mode; the component works on touch as itself (comfortable density, no keyboard pop). |
 | `sanitize` / `whiteList` | not needed | Safe by default: string templates render as text. |
 | `selectAllText` / `deselectAllText` | — | Moot without `actionsBox`. |

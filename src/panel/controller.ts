@@ -65,10 +65,14 @@ export class PanelController {
 
   private reposition(): void {
     const anchor = this.trigger.getBoundingClientRect();
-    // Natural size measurement: lift the height cap, then re-apply.
+    // Natural size measurement: lift the inline cap, then re-apply.
     this.panel.style.maxHeight = "";
     const naturalHeight = this.panel.offsetHeight;
     const naturalWidth = this.panel.offsetWidth;
+    // Stylesheet cap (--sl-panel-max-h / visibleOptions). Without this the
+    // inline maxHeight below would override it and the panel would grow to
+    // the whole available viewport space.
+    const cssCap = parseFloat(getComputedStyle(this.panel).maxHeight);
 
     const result = computePosition({
       anchor: { x: anchor.x, y: anchor.y, width: anchor.width, height: anchor.height },
@@ -79,13 +83,16 @@ export class PanelController {
       sameWidth: this.config.sameWidth ?? true,
     });
 
-    const height = Math.min(naturalHeight, result.maxHeight);
+    const capped = Number.isFinite(cssCap)
+      ? Math.min(result.maxHeight, cssCap)
+      : result.maxHeight;
+    const height = Math.min(naturalHeight, capped);
     const y =
       result.placement === "top"
         ? anchor.y - (this.config.offset ?? 6) - height
         : result.y;
 
-    this.panel.style.maxHeight = `${result.maxHeight}px`;
+    this.panel.style.maxHeight = `${capped}px`;
     if (this.config.sameWidth ?? true) {
       this.panel.style.minWidth = `${result.minWidth}px`;
     }

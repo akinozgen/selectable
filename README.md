@@ -12,7 +12,7 @@ A framework-agnostic, zero-dependency select component. As flexible as select2, 
 - **Unbreakable rendering.** The dropdown opens in the browser's top layer (Popover API), so it is never clipped by `overflow: hidden`, tables, or modals — and never loses a z-index war. There is no `dropdownParent` or `zIndex` option, because none is needed.
 - **Unbreakable styling.** All styles are isolated under prefixed classes and component-scoped `--sl-*` tokens (no `:root` pollution). Aggressive host CSS — global resets, `line-height` inheritance, element selectors — can't deform it. Rebrand the whole component by overriding a single `--sl-accent` token.
 - **Accessible.** WAI-ARIA combobox pattern, full keyboard map, screen-reader announcements via a polite live region, `prefers-reduced-motion` and forced-colors support.
-- **Fast at scale.** Automatic list virtualization above 100 options; 10,000+ options scroll at full frame rate with ~20 nodes in the DOM.
+- **Fast at scale.** Automatic list virtualization above 50 options; 10,000+ options scroll at full frame rate with ~20 nodes in the DOM.
 
 ## Install
 
@@ -101,6 +101,18 @@ new Selectable("#tags", {
   overflow: "counter",   // single-line chips with a "+N" counter; default "wrap"
   clearable: true,
 });
+```
+
+### Panel size
+
+```js
+new Selectable("#per-page", { visibleOptions: 6 }); // scroll after 6 rows
+```
+
+A CSS selector target enhances every match in one call:
+
+```js
+new Selectable("select.enhance", { search: true });
 ```
 
 ### Events and methods
