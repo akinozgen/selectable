@@ -146,6 +146,21 @@
         <select id="remote" name="uye"></select>
         <output id="remote-out"></output>
       </section>
+
+      <section>
+        <label for="subtext">Subtext + görsel — tekli, aramalı (60 kayıt, sanal)</label>
+        <select id="subtext" name="kisi">
+          <option value="">Kişi seçiniz…</option>
+          <option value="ada"
+                  data-image="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' fill='%233d63dd'/%3E%3Ccircle cx='10' cy='8' r='3.5' fill='%23fff'/%3E%3Cpath d='M3.5 18a6.5 6.5 0 0113 0z' fill='%23fff'/%3E%3C/svg%3E"
+                  data-subtext="ada@ornek.com — hem görsel hem subtext">Ada Yılmaz</option>
+          <option value="deniz"
+                  data-image="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' fill='%230e9f6e'/%3E%3Ccircle cx='10' cy='8' r='3.5' fill='%23fff'/%3E%3Cpath d='M3.5 18a6.5 6.5 0 0113 0z' fill='%23fff'/%3E%3C/svg%3E">Deniz Kaya (yalnız görsel)</option>
+          <option value="ekin" data-subtext="ekin@ornek.com">Ekin Demir</option>
+          <option value="tuna" data-subtext="tuna@ornek.com">Tuna Arslan</option>
+        </select>
+        <output id="subtext-out"></output>
+      </section>
     </div>
 
     <div class="dark-zone">
@@ -247,6 +262,27 @@
       remote.on("change", ({ options }) => {
         document.getElementById("remote-out").textContent =
           options.map((o) => o.label).join(", ") || "—";
+      });
+
+      // Subtext fixture'ını 60 kayda tamamla (sanal liste + tek tip satır
+      // yüksekliği kontrolü). data-subtext'li native option'lar otomatik
+      // olarak option.subtext alanına terfi eder.
+      const subtextSelect = document.getElementById("subtext");
+      for (let i = 1; i <= 56; i++) {
+        const o = document.createElement("option");
+        o.value = `kisi-${i}`;
+        o.textContent = `Kişi ${String(i).padStart(2, "0")}`;
+        o.dataset.subtext = `kisi${i}@ornek.com`;
+        subtextSelect.appendChild(o);
+      }
+      const subtext = new Selectable("#subtext", {
+        i18n: tr,
+        search: true,
+        clearable: true,
+      });
+      subtext.on("change", ({ options }) => {
+        document.getElementById("subtext-out").textContent =
+          options.map((o) => `${o.label} (${o.subtext ?? "subtext yok"})`).join(", ") || "—";
       });
     </script>
   </body>

@@ -44,11 +44,50 @@ const sel = new Selectable("#city", { /* options */ });
 The option object type (`SelectableOption`):
 
 ```ts
-{ value: string; label: string; disabled?: boolean; group?: string; data?: T }
+{
+  value: string;
+  label: string;
+  disabled?: boolean;
+  group?: string;    // plain-text group heading
+  subtext?: string;  // secondary muted line under the label
+  icon?: string;     // CSS class string → <i class="…" aria-hidden="true">
+  image?: string;    // URL → <img src alt=""> (20px, rounded)
+  data?: T;          // free-form payload for custom render templates
+}
 ```
 
 `group` is a plain-text group heading; native `<optgroup>`s are flattened into
-this field. Native `<option data-*>` attributes are copied into `data`.
+this field. Native `<option data-*>` attributes are copied into `data`, and
+three bootstrap-select conventions are additionally promoted to typed fields:
+`data-subtext` → `subtext`, `data-icon` → `icon`, `data-image` → `image`
+(they stay in `data` too, so existing templates keep working).
+
+```html
+<select id="member">
+  <option value="1" data-subtext="admin@example.com"
+          data-image="/avatars/alice.png">Alice</option>
+  <option value="2" data-icon="fa fa-user"
+          data-subtext="member@example.com">Ben</option>
+</select>
+```
+
+- **`subtext`** renders as a second, muted, single-line-ellipsis row under the
+  label — in the panel only, never on the trigger or in chips. If *any*
+  option has a subtext, every option row gets uniformly taller (the root gains
+  `data-has-subtext` and the `--sl-option-h` token rises per density: compact
+  40px / normal 46px / comfortable 54px) so virtualization keeps its
+  fixed-row-height math.
+- **`icon`** is a CSS class string (icon fonts like Font Awesome); it renders
+  as `<i class="…" aria-hidden="true">` in a leading 16px media box and
+  inherits the text color.
+- **`image`** is a URL rendered as a decorative `<img src alt="">` — 20px,
+  rounded, `object-fit: cover`. When both `icon` and `image` are set, the
+  image wins.
+- In single mode the trigger shows the selected option's icon/image next to
+  the label; multi-mode chips stay label-only.
+- Everything is rendered via `textContent`/attribute assignment — no HTML
+  parsing, XSS-safe by default. A custom [`render.option`](#render) template
+  takes precedence over all of this.
 
 ---
 

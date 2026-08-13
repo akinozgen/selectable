@@ -112,7 +112,7 @@ export class PanelController {
     // Theme/token bridge across the portal boundary.
     const resolvedTheme = this.root.closest("[data-sl-theme]")?.getAttribute("data-sl-theme");
     if (resolvedTheme) portal.setAttribute("data-sl-theme", resolvedTheme);
-    for (const attr of ["data-size", "data-density"]) {
+    for (const attr of ["data-size", "data-density", "data-has-subtext"]) {
       const v = this.root.getAttribute(attr);
       if (v) portal.setAttribute(attr, v);
     }

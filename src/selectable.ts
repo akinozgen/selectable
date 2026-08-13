@@ -234,6 +234,7 @@ export class Selectable<T = unknown> {
       overscan: this.cfg.overscan,
       groupToggles: this.cfg.selectAllGroups,
     });
+    this.syncSubtextFlag(realOptions);
     this.panel = new PanelController(
       this.refs.root,
       this.refs.trigger,
@@ -356,11 +357,26 @@ export class Selectable<T = unknown> {
       const known = s.options.find((o) => o.value === v);
       if (known && !real.some((o) => o.value === v)) snapshot.set(v, known);
     }
+    this.syncSubtextFlag(real);
     this.store.setState({
       options: real,
       selectedSnapshot: snapshot,
       filtered: this.computeFiltered(s.query, real),
     });
+  }
+
+  /**
+   * Mixed row heights would break the fixed-row virtualization math, so
+   * subtext raises the height of EVERY option row uniformly: any option with
+   * `subtext` puts `data-has-subtext` on the root (CSS bumps --sl-option-h),
+   * and the list re-measures its uniform row height from the DOM.
+   */
+  private syncSubtextFlag(options: SelectableOption<T>[]): void {
+    const has = options.some((o) => o.subtext !== undefined);
+    if (has === this.refs.root.hasAttribute("data-has-subtext")) return;
+    if (has) this.refs.root.setAttribute("data-has-subtext", "");
+    else this.refs.root.removeAttribute("data-has-subtext");
+    this.list.invalidateHeights();
   }
 
   /** Re-reads options and selection from the native <select>. */

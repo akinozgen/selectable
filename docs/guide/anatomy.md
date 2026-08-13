@@ -58,6 +58,16 @@ ever leaks into the host page.
         <span class="sl-option-label">Istanbul</span>
         <svg class="sl-check"></svg>
       </div>
+      <!-- with icon/image and/or subtext (data-icon/data-image/data-subtext
+           or the option's icon/image/subtext fields): -->
+      <div class="sl-option" role="option" aria-selected="false">
+        <span class="sl-option-media" aria-hidden="true"><!-- <i class="…"> or <img alt=""> --></span>
+        <span class="sl-option-content">
+          <span class="sl-option-label">Alice</span>
+          <span class="sl-option-subtext">admin@example.com</span>
+        </span>
+        <svg class="sl-check"></svg>
+      </div>
       <div class="sl-empty">No results found</div>
       <div class="sl-loading">…</div>          <!-- async loading skeleton -->
       <div class="sl-create" role="option">Create "marketing"</div>  <!-- tags -->
@@ -90,6 +100,8 @@ ever leaks into the host page.
 | `.sl-search` / `.sl-search-icon` / `.sl-search-input` | Search area |
 | `.sl-listbox` | Option list (`role="listbox"`) |
 | `.sl-option` / `.sl-option-label` / `.sl-check` | Option row and its parts |
+| `.sl-option-media` | Leading icon/image box (`icon`/`image` fields; pointer-decorative, `aria-hidden`). Also shown in `.sl-value` in single mode |
+| `.sl-option-content` / `.sl-option-subtext` | Label + subtext column — present only on rows with icon/image/subtext; plain rows keep the flat label + check DOM |
 | `.sl-group-label` | Group heading |
 | `.sl-group-text` / `.sl-group-toggle` | Group heading parts in `selectAll: { groups: true }` mode (toggle icon is pointer-only, `aria-hidden`) |
 | `.sl-select-all` | The pinned "Select all / Deselect all" header row (`selectAll`, multiple mode) |
@@ -111,6 +123,7 @@ ever leaks into the host page.
 | `data-sl-theme` | `light` \| `dark` | Only when pinned via `theme: "light"/"dark"`; otherwise auto |
 | `data-multiple` | boolean attribute | Multiple mode |
 | `data-disabled` | boolean attribute | Disabled |
+| `data-has-subtext` | boolean attribute | Any option in the current data has a `subtext` — raises `--sl-option-h` uniformly for every row (keeps virtualization fixed-height). Managed automatically on `setOptions`/`refresh` |
 
 ## ARIA wiring
 
@@ -156,8 +169,9 @@ Example — bold the selected option:
 
 - **The panel is a child of the `.sl` root** and opens in the top layer via
   `popover="manual"`. In browsers without the Popover API, the open panel is
-  moved to the `.sl-portal` root at the end of `<body>`; theme/size/density
-  attributes and inline `--sl-*` values on the root are copied to the portal.
+  moved to the `.sl-portal` root at the end of `<body>`; theme/size/density/
+  has-subtext attributes and inline `--sl-*` values on the root are copied to
+  the portal.
   For that reason, don't anchor panel-internal CSS to the root (`.sl
   .sl-panel …`); target the part classes (`.sl-panel`, `.sl-option`, …)
   directly.

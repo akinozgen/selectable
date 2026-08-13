@@ -59,9 +59,11 @@ shared defaults to every select on a page:
 Selectable.upgrade(document, { search: true, maxSelections: 3 });
 ```
 
-For *per-option* data (the `data-subtext`, `data-icon` kind), native
-`<option data-*>` attributes are read automatically into the option's `data`
-payload and are available in the `render.option` template (example below).
+*Per-option* attributes are the exception — they keep working in the markup:
+`data-subtext`, `data-icon` and `data-image` are read natively (same names as
+bootstrap-select) and render built-in, no template needed. Any other
+`<option data-*>` attribute lands in the option's `data` payload for use in a
+custom `render.option` template.
 
 ## Config mapping table
 
@@ -88,9 +90,9 @@ payload and are available in the `render.option` template (example below).
 | `dropdownAlignRight` | no equivalent | The panel aligns to the trigger; `sameWidth: true` is the default. |
 | `header` | no equivalent | No panel header (v1). |
 | `showTick` / `tickIcon` | built in | A check icon on the selected option is standard; restyle it with CSS. |
-| `showSubtext` / `data-subtext` | `render.option` + option `data-*` | Example below. |
+| `showSubtext` / `data-subtext` | **built in** — keep the markup | `data-subtext` maps natively to the option's `subtext` field: a muted second line in the panel row. Example below. |
 | `data-content` (HTML) | `render.option` | Return a `Node` — strings render as text (XSS-safe). |
-| `data-icon` | `render.option` | Create the icon element in the template. |
+| `data-icon` | **built in** — keep the markup | Maps natively to `icon` (a CSS class string) → `<i class="…" aria-hidden>` before the label; also shown on the single-mode trigger. `data-image` (an URL) works the same way as a 20px rounded `<img>`. |
 | `multipleSeparator` | not needed | Selections are shown as chips; there is no separator-joined text. |
 | `hideDisabled` | no equivalent | Disabled options are visible but not selectable. |
 | `virtualScroll` / `data-virtual-scroll` | `virtual` | Already automatic above 50 options. |
@@ -98,31 +100,27 @@ payload and are available in the `render.option` template (example below).
 | `sanitize` / `whiteList` | not needed | Safe by default: string templates render as text. |
 | `selectAllText` / `deselectAllText` | `i18n: { selectAll, deselectAll }` | The header row's two label texts. |
 
-### `data-subtext` example
+### `data-subtext` / `data-icon` example
+
+The bootstrap-select markup conventions work as-is — no template, no config:
 
 ```html
 <select id="member" data-selectable>
-  <option value="1" data-subtext="admin@example.com">Alice</option>
+  <option value="1" data-subtext="admin@example.com"
+          data-icon="fa fa-crown">Alice</option>
   <option value="2" data-subtext="member@example.com">Ben</option>
 </select>
 ```
 
 ```js
-new Selectable("#member", {
-  render: {
-    option: (o) => {
-      const el = document.createElement("span");
-      el.textContent = o.label;
-      if (o.data?.subtext) {
-        const sub = document.createElement("small");
-        sub.textContent = ` ${o.data.subtext}`;
-        el.appendChild(sub);
-      }
-      return el;
-    },
-  },
-});
+new Selectable("#member"); // that's it — subtext + icon render built-in
 ```
+
+The subtext renders as a muted second line in the panel (rows get uniformly
+taller so virtualization stays intact); the icon/image appears before the
+label and on the single-mode trigger. Details:
+[configuration.md](configuration.md#summary-table). Only reach for
+`render.option` when you need a fully custom row (the `data-content` case).
 
 ## Event mapping table
 

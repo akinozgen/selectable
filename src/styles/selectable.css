@@ -505,6 +505,61 @@
   cursor: default;
 }
 
+/* ---------- OPTION MEDYA + SUBTEXT ---------- */
+
+/* Baştaki medya kutusu: 16px ikon kutusu, 12px hizalama hattına oturur.
+   İkonlar (<i class="…">) currentColor'ı miras alır. */
+.sl-option-media {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-inline-size: 1rem;
+  font-size: var(--sl-icon-size);   /* font ikonu glif boyutu */
+  line-height: 1;
+}
+
+/* Görsel: 20px, hafif yuvarlatılmış, kutuyu doldurur */
+.sl-option-media img {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border-radius: var(--sl-radius-xs);
+  object-fit: cover;
+}
+
+/* Etiket + alt metin sütunu — yalnızca medyalı/subtext'li satırlarda var;
+   düz seçenekler bugünkü DOM'unu (label + check) aynen korur. */
+.sl-option-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+/* İkincil satır: tek satır, taşan kısım üç nokta. Renk: muted-fg'nin
+   fg'ye doğru karışımı — 12px metin aktif satır zemininde (--sl-muted)
+   de WCAG AA (4.5:1) kontrastını korur (salt muted-fg 4.48'de kalıyordu). */
+.sl-option-subtext {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sl-muted-fg);   /* color-mix desteklemeyenler için fallback */
+  color: color-mix(in oklab, var(--sl-muted-fg) 85%, var(--sl-fg));
+  font-size: var(--sl-font-size-caption);
+}
+
+/* Disabled satırda subtext de satırın soluk rengini alır */
+[aria-disabled="true"] .sl-option-subtext {
+  color: inherit;
+}
+
+/* Tekli modda trigger değeri: medya + etiket (subtext panele özgü).
+   .sl-value tek satır metin kabıdır; medya inline hizalanır. */
+.sl-value .sl-option-media {
+  margin-inline-end: var(--sl-space-2);
+  vertical-align: middle;
+}
+
 /* ---------- GRUP BAŞLIĞI ---------- */
 
 .sl-group-label {
@@ -710,6 +765,9 @@
     color: HighlightText;
   }
   [data-active] .sl-check {
+    color: HighlightText;
+  }
+  [data-active] .sl-option-subtext {
     color: HighlightText;
   }
   [data-disabled] .sl-trigger,

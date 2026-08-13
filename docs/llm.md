@@ -92,7 +92,7 @@ A string selector enhances **all** matches (returned instance = first match; oth
 | `virtual` | `boolean \| { optionHeight?, overscan? }` | auto above 50 options | `false` disables; object forces virtualization on (`overscan` default 6; row height is measured automatically — `optionHeight` currently unused). |
 | `visibleOptions` | `number` | token cap (~8 rows) | Panel height in option rows before scrolling (bootstrap-select `size` equivalent). |
 
-`SelectableOption`: `{ value: string; label: string; disabled?: boolean; group?: string; data?: T }`. Native `<option data-*>` attributes land in `data`.
+`SelectableOption`: `{ value: string; label: string; disabled?: boolean; group?: string; subtext?: string; icon?: string; image?: string; data?: T }`. Native `<option data-*>` attributes land in `data`; `data-subtext`/`data-icon`/`data-image` are ALSO promoted to the typed `subtext`/`icon`/`image` fields (bootstrap-select parity). `subtext` = muted second line in the panel row (any subtext present → root gets `data-has-subtext`, all rows uniformly taller: compact 40 / normal 46 / comfortable 54px — virtualization stays fixed-height). `icon` = CSS class string → `<i class aria-hidden>`; `image` = URL → `<img src alt="">` 20px rounded (image wins over icon). Single-mode trigger shows icon/image + label (no subtext); chips are label-only. All rendered via textContent/attributes (XSS-safe); custom `render.option` overrides the whole row layout.
 
 ### `asyncSource(fetcher, opts?)`
 
@@ -185,7 +185,7 @@ All tokens are scoped to `.sl, .sl-portal` (never `:root`). Override on `.sl` (a
 | `--sl-icon-size` | `1rem` | Chevron/clear/check |
 | `--sl-chip-h` / `--sl-chip-radius` | `1.5rem` / `6px` | Chips |
 | `--sl-panel-pad` / `--sl-panel-offset` / `--sl-panel-max-h` | `4px` / `6px` / `18rem` | Panel box |
-| `--sl-option-h` | `2rem` (density compact `1.75`, comfortable `2.5`) | Option row height |
+| `--sl-option-h` | `2rem` (density compact `1.75`, comfortable `2.5`; with `data-has-subtext`: `2.5`/`2.875`/`3.375`) | Option row height |
 | `--sl-option-pad-x` | `0.5rem` | Option padding |
 
 Dark theme: set `data-sl-theme="dark"` on any ancestor (or the instance via `theme: "dark"`); without any `data-sl-theme`, `prefers-color-scheme` decides. `dist/tokens.css` ships the token layer alone.
@@ -193,16 +193,18 @@ Dark theme: set `data-sl-theme="dark"` on any ancestor (or the instance via `the
 ## DOM anatomy (summary)
 
 ```text
-.sl [data-state=open|closed] [data-size] [data-density] [data-sl-theme] [data-multiple] [data-disabled]
+.sl [data-state=open|closed] [data-size] [data-density] [data-sl-theme] [data-multiple] [data-disabled] [data-has-subtext]
 ├─ select.sl-native            (original select — form truth, visually clipped)
 ├─ .sl-trigger [tabindex=0]    (role=combobox; role=button in search mode — the search input is the combobox)
-│  └─ .sl-value → .sl-placeholder | text | .sl-chip (.sl-chip-label + .sl-chip-remove) | .sl-chip-counter "+N"
+│  └─ .sl-value → .sl-placeholder | [.sl-option-media] + text | .sl-chip (.sl-chip-label + .sl-chip-remove) | .sl-chip-counter "+N"
 │     + .sl-clear, .sl-chevron, .sl-spinner
 ├─ .sl-panel [popover=manual] [data-placement=bottom|top]
 │  ├─ .sl-search → input.sl-search-input   (search mode only)
 │  └─ .sl-listbox [role=listbox]
 │     ├─ .sl-select-all [role=option] [aria-selected] [data-active]   (selectAll, pinned header row)
 │     ├─ .sl-group-label / .sl-option [role=option] [aria-selected] [data-active]
+│     │    (plain option: .sl-option-label + .sl-check;
+│     │     with icon/image/subtext: [.sl-option-media (i|img)] + .sl-option-content (.sl-option-label + .sl-option-subtext) + .sl-check)
 │     │    (selectAll groups mode: .sl-group-label[data-group][data-checked=all|some|none] → .sl-group-text + .sl-group-toggle)
 │     ├─ .sl-empty / .sl-loading / .sl-create ("Create …" row, tags mode)
 └─ .sl-live                    (polite live region)

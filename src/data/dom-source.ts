@@ -11,7 +11,7 @@ export function readNativeOptions<T = unknown>(
         walk(child, child.label);
       } else if (child instanceof HTMLOptionElement) {
         // Placeholder convention: empty-value first option is not a real choice.
-        out.push({
+        const option: SelectableOption<T> = {
           value: child.value,
           label: child.textContent?.trim() ?? child.value,
           disabled: child.disabled || undefined,
@@ -19,7 +19,13 @@ export function readNativeOptions<T = unknown>(
           data: (Object.keys(child.dataset).length
             ? { ...child.dataset }
             : undefined) as T | undefined,
-        });
+        };
+        // bootstrap-select conventions promoted to typed fields; the raw
+        // dataset copy above keeps them in `data` too (backward compat).
+        if (child.dataset.subtext) option.subtext = child.dataset.subtext;
+        if (child.dataset.icon) option.icon = child.dataset.icon;
+        if (child.dataset.image) option.image = child.dataset.image;
+        out.push(option);
       }
     }
   };

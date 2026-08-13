@@ -6,6 +6,22 @@ export interface SelectableOption<T = unknown> {
   disabled?: boolean;
   /** Group label this option belongs to (flattened rendering). */
   group?: string;
+  /**
+   * Secondary muted line under the label (bootstrap-select `data-subtext`).
+   * Presence anywhere in the data raises the row height uniformly
+   * (`data-has-subtext` on the root) so virtualization stays fixed-height.
+   */
+  subtext?: string;
+  /**
+   * Icon CSS class string (e.g. "fa fa-star"), rendered as
+   * `<i class="…" aria-hidden="true">` in a leading media box.
+   */
+  icon?: string;
+  /**
+   * Image URL, rendered as `<img src alt="">` (20px, rounded) in the leading
+   * media box. Takes precedence over `icon` when both are set.
+   */
+  image?: string;
   /** Free-form payload for custom render templates. */
   data?: T;
 }

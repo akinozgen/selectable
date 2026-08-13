@@ -206,3 +206,31 @@
     --sl-option-h: 2.5rem;
   }
 }
+
+/* ============================================================
+   SUBTEXT SATIR YÜKSEKLİĞİ — data-has-subtext (JS yazar): herhangi bir
+   seçenekte subtext varsa TÜM satırlar tek tip uzar (karışık yükseklik
+   sanal liste matematiğini bozar). Yoğunluk ekseninin türevi; kaynak
+   sırası gereği boyut/yoğunluk/coarse bloklarını ezer, kendi compact/
+   comfortable çeşitleri de taban kuralından SONRA gelir. (0,2,0) sınırı.
+   ============================================================ */
+
+.sl[data-has-subtext],
+.sl-portal[data-has-subtext] {
+  --sl-option-h: 2.875rem;   /* 46px (normal) */
+}
+
+[data-has-subtext][data-density="compact"] {
+  --sl-option-h: 2.5rem;     /* 40px */
+}
+
+[data-has-subtext][data-density="comfortable"] {
+  --sl-option-h: 3.375rem;   /* 54px */
+}
+
+/* Dokunmatikte yoğunluk belirtilmemişse comfortable karşılığı */
+@media (pointer: coarse) {
+  [data-has-subtext]:not([data-density]) {
+    --sl-option-h: 3.375rem;
+  }
+}

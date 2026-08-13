@@ -178,6 +178,28 @@ export function optionFor<T>(
   );
 }
 
+/**
+ * Leading media box for options with `image`/`icon` — render-safe by
+ * construction: src/class assignment only, never innerHTML. Image wins when
+ * both are set.
+ */
+function renderMedia<T>(option: SelectableOption<T>): HTMLElement {
+  const media = el("span", "sl-option-media", { "aria-hidden": "true" });
+  if (option.image !== undefined) {
+    const img = el("img");
+    img.src = option.image;
+    img.alt = "";
+    media.appendChild(img);
+  } else if (option.icon !== undefined) {
+    media.appendChild(el("i", option.icon, { "aria-hidden": "true" }));
+  }
+  return media;
+}
+
+function hasMedia<T>(option: SelectableOption<T>): boolean {
+  return option.image !== undefined || option.icon !== undefined;
+}
+
 export function updateTrigger<T>(refs: Refs, ctx: TriggerContext<T>): void {
   const { state } = ctx;
   const selectedOptions = state.selected.map((v) => optionFor(state, v));
@@ -190,7 +212,13 @@ export function updateTrigger<T>(refs: Refs, ctx: TriggerContext<T>): void {
   } else if (ctx.render?.selection) {
     setContent(refs.value, ctx.render.selection(selectedOptions));
   } else if (!ctx.multiple) {
-    refs.value.textContent = selectedOptions[0]?.label ?? "";
+    const option = selectedOptions[0];
+    if (option && hasMedia(option)) {
+      // Media + label in the trigger; subtext stays panel-only.
+      refs.value.append(renderMedia(option), document.createTextNode(option.label));
+    } else {
+      refs.value.textContent = option?.label ?? "";
+    }
   } else {
     for (const option of selectedOptions) {
       const chip = el("span", "sl-chip");
@@ -321,6 +349,15 @@ export class ListRenderer<T> {
   /** Measured option row height (px) — used by the infinite-scroll threshold. */
   get rowHeight(): number {
     return this.optionHeight;
+  }
+
+  /**
+   * Forces a fresh DOM height measurement on the next window render — called
+   * when the uniform row height changes (data-has-subtext toggling on the
+   * root raises --sl-option-h for every option row at once).
+   */
+  invalidateHeights(): void {
+    this.measured = false;
   }
 
   /** Full data refresh (filter change, options change). */
@@ -522,6 +559,20 @@ export class ListRenderer<T> {
       const label = el("span", "sl-option-label");
       setContent(label, content);
       node.appendChild(label);
+    } else if (hasMedia(option) || option.subtext !== undefined) {
+      // Rich row: [media] + content(label + subtext) + check. Plain options
+      // below keep their exact historical DOM (label + check, no wrapper).
+      if (hasMedia(option)) node.appendChild(renderMedia(option));
+      const content = el("span", "sl-option-content");
+      const label = el("span", "sl-option-label");
+      label.textContent = option.label;
+      content.appendChild(label);
+      if (option.subtext !== undefined) {
+        const subtext = el("span", "sl-option-subtext");
+        subtext.textContent = option.subtext;
+        content.appendChild(subtext);
+      }
+      node.appendChild(content);
     } else {
       const label = el("span", "sl-option-label");
       label.textContent = option.label;
