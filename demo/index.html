@@ -7,6 +7,9 @@
     <style>
       body {
         font-family: system-ui, sans-serif;
+      }
+      /* layout lives on <main> so the page has a proper landmark (axe: region) */
+      main {
         max-width: 860px;
         margin: 3rem auto;
         padding: 0 1rem;
@@ -26,6 +29,7 @@
     </style>
   </head>
   <body>
+    <main>
     <h1>Selectable</h1>
 
     <div class="row">
@@ -147,6 +151,7 @@
         <div><button type="reset">Formu Sıfırla</button></div>
       </section>
     </form>
+    </main>
 
     <script type="module">
       import "@/styles/tokens.css";

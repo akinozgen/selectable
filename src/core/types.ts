@@ -1,4 +1,4 @@
-/** Public data model & option types. See docs/KARARLAR.md for decisions. */
+/** Public data model & option types. */
 
 export interface SelectableOption<T = unknown> {
   value: string;

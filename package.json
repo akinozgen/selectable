@@ -1,9 +1,13 @@
 {
-  "name": "selectable",
+  "name": "selectablejs",
   "version": "0.1.0",
   "description": "Framework-agnostic, zero-dependency, premium select component. Flexible like select2, featureful like bootstrap-select, unbreakable design.",
   "type": "module",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akinozgen/selectable.git"
+  },
+  "author": "Akın Özgen <akinozgen17@outlook.com>",
   "main": "./dist/selectable.cjs",
   "module": "./dist/selectable.js",
   "types": "./dist/index.d.ts",
@@ -13,16 +17,19 @@
       "import": "./dist/selectable.js",
       "require": "./dist/selectable.cjs"
     },
-    "./css": "./dist/selectable.css"
+    "./css": "./dist/selectable.css",
+    "./css/tokens": "./dist/tokens.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "docs/llm.md"
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/build-css.mjs",
+    "build": "vite build && tsc && node scripts/build-css.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "keywords": [
     "select",
@@ -34,6 +41,8 @@
   ],
   "license": "MIT",
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.62.1",
     "jsdom": "^25.0.0",
     "playwright": "^1.62.1",
     "typescript": "^5.6.0",
