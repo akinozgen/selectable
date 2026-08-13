@@ -15,6 +15,8 @@ export const defaultMessages: SelectableMessages = {
   createOption: (label) => `Create "${label}"`,
   loadError: "Failed to load results",
   loadingMore: "Loading more…",
+  selectAll: "Select all",
+  deselectAll: "Deselect all",
 };
 
 /** Turkish message pack (tree-shaken away if unused). */
@@ -32,6 +34,8 @@ export const tr: SelectableMessages = {
   createOption: (label) => `"${label}" oluştur`,
   loadError: "Sonuçlar yüklenemedi",
   loadingMore: "Daha fazla yükleniyor…",
+  selectAll: "Tümünü seç",
+  deselectAll: "Tümünü kaldır",
 };
 
 export function resolveMessages(

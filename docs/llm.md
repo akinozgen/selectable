@@ -76,6 +76,7 @@ A string selector enhances **all** matches (returned instance = first match; oth
 | `closeOnSelect` | `boolean` | `!multiple` | Close panel after selecting. |
 | `selectOnTab` | `boolean` | `false` | Tab commits the active option before closing. |
 | `maxSelections` | `number` | `Infinity` | Multi-mode selection cap (announces via live region). |
+| `selectAll` | `boolean \| { groups?: boolean }` | `false` | Multi-mode only (warns + ignored otherwise). Pinned "Select all/Deselect all" header row; toggles the **filtered enabled** options in ONE change event, respecting `maxSelections`. `{ groups: true }` also makes group headers per-group toggles (`data-checked="all\|some\|none"`, pointer-only). |
 | `tags` | `boolean \| { create?(label) => SelectableOption }` | `false` | Free-text option creation from the search query. Needs search (auto-enabled). |
 | `size` | `"sm" \| "md" \| "lg"` | `"md"` | Control size (token-driven). |
 | `density` | `"compact" \| "normal" \| "comfortable"` | `"normal"` (comfortable auto on touch) | Option row height axis, independent of size. |
@@ -151,7 +152,7 @@ Instance events via `sel.on(type, handler)` — handler receives the payload dir
 
 ## Keyboard (summary)
 
-Closed: `Enter`/`Space`/`↓`/`↑` open; typing opens + searches; `Backspace` removes last chip. Open: `↓`/`↑` move, `PageUp/Down` ±10, `Home`/`End` jump, `Enter` (and `Space` outside input) selects, `Esc` clears query then closes, `Tab` closes (commits first if `selectOnTab`), `Alt+↑` closes.
+Closed: `Enter`/`Space`/`↓`/`↑` open; typing opens + searches; `Backspace` removes last chip. Open: `↓`/`↑` move, `PageUp/Down` ±10, `Home`/`End` jump, `Enter` (and `Space` outside input) selects, `Esc` clears query then closes, `Tab` closes (commits first if `selectOnTab`), `Alt+↑` closes. With `selectAll`: the header row sits before the first option (`↑` from it), and `Ctrl+A` toggles it on the trigger (no-search mode) — inside the search input `Ctrl+A` stays native text-select, use `Ctrl+Shift+A`.
 
 ## CSS tokens (complete)
 
@@ -200,7 +201,9 @@ Dark theme: set `data-sl-theme="dark"` on any ancestor (or the instance via `the
 ├─ .sl-panel [popover=manual] [data-placement=bottom|top]
 │  ├─ .sl-search → input.sl-search-input   (search mode only)
 │  └─ .sl-listbox [role=listbox]
+│     ├─ .sl-select-all [role=option] [aria-selected] [data-active]   (selectAll, pinned header row)
 │     ├─ .sl-group-label / .sl-option [role=option] [aria-selected] [data-active]
+│     │    (selectAll groups mode: .sl-group-label[data-group][data-checked=all|some|none] → .sl-group-text + .sl-group-toggle)
 │     ├─ .sl-empty / .sl-loading / .sl-create ("Create …" row, tags mode)
 └─ .sl-live                    (polite live region)
 .sl-portal                     (body-level root, only in non-Popover fallback)
@@ -335,6 +338,7 @@ onBeforeUnmount(() => sel?.destroy());
 - **`form.reset()` is supported natively** — selection snaps back to the markup's `selected` attributes, no code needed.
 - **Created tags / async-selected values become real native `<option>`s** (marked `data-sl-created`) so the form submits them. With zero search matches the create row is auto-activated — bare `Enter` creates the tag.
 - **Native `<label>`s keep working**: the trigger inherits the accessible name (`aria-labelledby`) and clicking the label focuses the trigger — don't add duplicate `aria-label`s.
+- **`selectAll` with an async source is inherently partial**: "all" = the options loaded so far for the current query. While `hasMore` is `true` the server holds more pages the toggle can't see — select-all does NOT fetch them. Same for group toggles.
 - **`search.debounceMs` only affects async sources**; local filtering is synchronous.
 - **`setValue(v, { silent: true })`** updates state without emitting `change` (instance or native) — use for programmatic sync loops.
 - **`value` is always `string[]`**, even in single mode (`value[0]` for the scalar).

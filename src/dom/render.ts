@@ -22,6 +22,8 @@ export interface Refs {
   empty: HTMLElement;
   loading: HTMLElement;
   create: HTMLElement;
+  /** "Select all" header row; null unless the selectAll option is on. */
+  selectAllRow: HTMLElement | null;
 }
 
 export interface BuildConfig {
@@ -29,6 +31,8 @@ export interface BuildConfig {
   searchable: boolean;
   multiple: boolean;
   clearable: boolean;
+  /** Renders the pinned "Select all" header row inside the listbox. */
+  selectAll: boolean;
   overflow: "wrap" | "counter";
   size?: "sm" | "md" | "lg";
   density?: "compact" | "normal" | "comfortable";
@@ -110,6 +114,20 @@ export function buildSkeleton(
 
   const listbox = el("div", "sl-listbox", { role: "listbox", id: listboxId });
   if (cfg.multiple) listbox.setAttribute("aria-multiselectable", "true");
+  // "Select all" header: a virtual option row pinned (sticky) above the list.
+  // Same pattern as the create row — pointer + activedescendant, no tabindex.
+  let selectAllRow: HTMLElement | null = null;
+  if (cfg.selectAll) {
+    selectAllRow = el("div", "sl-select-all", {
+      role: "option",
+      id: `${cfg.baseId}-select-all`,
+      "aria-selected": "false",
+    });
+    const label = el("span", "sl-option-label");
+    selectAllRow.append(label, icons.check());
+    selectAllRow.hidden = true;
+    listbox.appendChild(selectAllRow);
+  }
   const vsizer = el("div", "sl-vsizer");
   const vlist = el("div", "sl-vlist");
   const empty = el("div", "sl-empty");
@@ -133,7 +151,7 @@ export function buildSkeleton(
 
   select.insertAdjacentElement("beforebegin", root);
   root.append(select, trigger, panel);
-  return { root, trigger, value, clear, sep, panel, search, searchInput, listbox, vsizer, vlist, empty, loading, create };
+  return { root, trigger, value, clear, sep, panel, search, searchInput, listbox, vsizer, vlist, empty, loading, create, selectAllRow };
 }
 
 // ---------------------------------------------------------------------------
@@ -264,6 +282,8 @@ export interface ListConfig<T> {
   /** Row-count threshold above which windowed rendering kicks in. */
   virtualThreshold: number;
   overscan: number;
+  /** Group headers become pointer toggles (selectAll: { groups: true }). */
+  groupToggles: boolean;
 }
 
 /**
@@ -282,6 +302,8 @@ export class ListRenderer<T> {
   private selected = new Set<string>();
   private activeIndex = -1;
   private generation = 0;
+  /** Height (px) of the visible sticky "select all" header, 0 when hidden. */
+  private selectAllOffset = 0;
 
   constructor(
     private refs: Refs,
@@ -329,6 +351,7 @@ export class ListRenderer<T> {
       if (idx === activeIndex) node.setAttribute("data-active", "");
       else node.removeAttribute("data-active");
     }
+    this.updateGroupMarkers();
   }
 
   setLoading(loading: boolean): void {
@@ -354,6 +377,39 @@ export class ListRenderer<T> {
     return this.refs.create.id;
   }
 
+  /**
+   * Shows/hides the "select all" header row. `all` mirrors "every filtered
+   * enabled option is selected" (aria-selected); `active` = keyboard highlight.
+   * The row is sticky above the virtual window, so the window (.sl-vlist) is
+   * pushed down by the row's height while it is visible.
+   */
+  setSelectAll(label: string | null, state: { all: boolean; active: boolean }): void {
+    const node = this.refs.selectAllRow;
+    if (!node) return;
+    if (label === null) {
+      if (!node.hidden) {
+        node.hidden = true;
+        this.selectAllOffset = 0;
+        this.refs.vlist.style.insetBlockStart = "";
+      }
+      return;
+    }
+    node.hidden = false;
+    node.firstElementChild!.textContent = label;
+    node.setAttribute("aria-selected", String(state.all));
+    if (state.active) node.setAttribute("data-active", "");
+    else node.removeAttribute("data-active");
+    const h = node.offsetHeight;
+    if (h !== this.selectAllOffset) {
+      this.selectAllOffset = h;
+      this.refs.vlist.style.insetBlockStart = h > 0 ? `${h}px` : "";
+    }
+  }
+
+  get selectAllId(): string {
+    return this.refs.selectAllRow?.id ?? "";
+  }
+
   /** Scrolls the window so the given option index is visible. */
   ensureVisible(optionIndex: number): void {
     const rowIdx = this.rows.findIndex(
@@ -363,9 +419,12 @@ export class ListRenderer<T> {
     const top = this.metrics.offsets[rowIdx]!;
     const bottom = this.metrics.offsets[rowIdx + 1]!;
     const box = this.refs.listbox;
+    // The sticky select-all header consumes selectAllOffset px of the
+    // viewport; the vlist is shifted down by the same amount, so the top
+    // edge math cancels out — only the bottom edge needs the correction.
     if (top < box.scrollTop) box.scrollTop = top;
-    else if (bottom > box.scrollTop + box.clientHeight) {
-      box.scrollTop = bottom - box.clientHeight;
+    else if (bottom + this.selectAllOffset > box.scrollTop + box.clientHeight) {
+      box.scrollTop = bottom + this.selectAllOffset - box.clientHeight;
     }
     this.renderWindow();
   }
@@ -427,7 +486,20 @@ export class ListRenderer<T> {
   private renderRow(row: Row<T>): HTMLElement {
     if (row.kind === "group") {
       const g = el("div", "sl-group-label", { role: "presentation" });
-      g.textContent = row.label;
+      if (this.cfg.groupToggles) {
+        // Pointer-only group toggle (same pattern as .sl-chip-remove): the
+        // check icon is decorative, the row itself is the click target.
+        // Keyboard path stays options + select-all header + Ctrl(+Shift)+A.
+        g.dataset.group = row.label;
+        g.setAttribute("data-checked", this.groupChecked(row.label));
+        const text = el("span", "sl-group-text");
+        text.textContent = row.label;
+        const toggle = el("span", "sl-group-toggle", { "aria-hidden": "true" });
+        toggle.appendChild(icons.check());
+        g.append(text, toggle);
+      } else {
+        g.textContent = row.label;
+      }
       return g;
     }
     const { option, optionIndex } = row;
@@ -457,5 +529,29 @@ export class ListRenderer<T> {
     }
     node.appendChild(icons.check());
     return node;
+  }
+
+  /** all|some|none over the group's *filtered enabled* options. */
+  private groupChecked(group: string): "all" | "some" | "none" {
+    let total = 0;
+    let selected = 0;
+    for (const row of this.rows) {
+      if (row.kind !== "option" || row.option.group !== group) continue;
+      if (row.option.disabled) continue;
+      total++;
+      if (this.selected.has(row.option.value)) selected++;
+    }
+    if (total === 0 || selected === 0) return "none";
+    return selected === total ? "all" : "some";
+  }
+
+  /** Refreshes data-checked on the rendered group headers (toggle mode). */
+  private updateGroupMarkers(): void {
+    if (!this.cfg.groupToggles) return;
+    for (const node of Array.from(
+      this.refs.vlist.querySelectorAll<HTMLElement>(".sl-group-label[data-group]"),
+    )) {
+      node.setAttribute("data-checked", this.groupChecked(node.dataset.group!));
+    }
   }
 }

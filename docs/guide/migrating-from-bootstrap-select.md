@@ -12,9 +12,10 @@ title: Migrating from bootstrap-select
   `selectpicker("refresh")` ritual ends (the native select is observed
   automatically); real accessibility (APG combobox pattern, screen-reader
   announcements).
-- **You give up:** in v1 there is no equivalent of `actionsBox`'s "Select All"
-  or the panel `header`; the habit of configuring via `data-*` attributes
-  moves to JS init. See the "no equivalent" rows below.
+- **You give up:** in v1 there is no equivalent of the panel `header`; the
+  habit of configuring via `data-*` attributes moves to JS init. See the
+  "no equivalent" rows below. (`actionsBox`'s "Select All" now has a direct
+  equivalent: the `selectAll` option.)
 
 ## Concept mapping
 
@@ -77,8 +78,8 @@ payload and are available in the `render.option` template (example below).
 | `noneResultsText` | `i18n: { noResults }` | |
 | `countSelectedText` | `i18n: { selectedCount }` | |
 | `selectedTextFormat: "count > x"` | `overflow: "counter"` | Behavioral difference: chips plus a `+N` counter chip instead of a text summary. |
-| `actionsBox` (Deselect All) | `clearable: true` / `sel.clear()` | A clear button and a method exist. |
-| `actionsBox` (Select All) | **no equivalent (v1)** | If needed: wire your own button to `sel.setValue(options.map(o => o.value))`. |
+| `actionsBox` (Deselect All) | `clearable: true` / `sel.clear()` / `selectAll` | A clear button, a method, and the select-all header row (which flips to "Deselect all") all exist. |
+| `actionsBox` (Select All) | `selectAll: true` | A pinned "Select all" header row in the panel; respects the active search filter and `maxSelections`, fires ONE `change`. `selectAll: { groups: true }` adds per-`<optgroup>` toggles — something bootstrap-select never had. See [configuration.md](configuration.md#selectall). |
 | `size` (menu row count) | `visibleOptions` | E.g. `visibleOptions: 10`; or the `--sl-panel-max-h` token via CSS. |
 | `width` / `data-width` | CSS | `.sl` is a normal block element; give it `width`/`max-width`. |
 | `style` / `styleBase` (`btn-primary`…) | token system | [theming.md](theming.md); see below for Bootstrap matching. |
@@ -95,7 +96,7 @@ payload and are available in the `render.option` template (example below).
 | `virtualScroll` / `data-virtual-scroll` | `virtual` | Already automatic above 50 options. |
 | `mobile` | no equivalent (v1) | No automatic native-fallback mode; the component works on touch as itself (comfortable density, no keyboard pop). |
 | `sanitize` / `whiteList` | not needed | Safe by default: string templates render as text. |
-| `selectAllText` / `deselectAllText` | — | Moot without `actionsBox`. |
+| `selectAllText` / `deselectAllText` | `i18n: { selectAll, deselectAll }` | The header row's two label texts. |
 
 ### `data-subtext` example
 

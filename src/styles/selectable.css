@@ -100,7 +100,8 @@
 .sl-search[hidden],
 .sl-empty[hidden],
 .sl-loading[hidden],
-.sl-create[hidden] {
+.sl-create[hidden],
+.sl-select-all[hidden] {
   display: none;
 }
 
@@ -582,6 +583,64 @@
   border-block-start: 1px solid var(--sl-hairline);
 }
 
+/* ---------- TÜMÜNÜ SEÇ (selectAll) ---------- */
+
+/* Option benzeri başlık satırı: listbox içinde sticky, altında hairline.
+   JS .sl-vlist'i satır yüksekliği kadar aşağı iter (inset-block-start). */
+.sl-select-all {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--sl-space-2);
+  min-block-size: var(--sl-option-h);
+  padding-block: 0;
+  padding-inline: var(--sl-option-pad-x);
+  background-color: var(--sl-panel-bg);
+  border-block-end: 1px solid var(--sl-hairline);
+  border-start-start-radius: var(--sl-radius-sm);
+  border-start-end-radius: var(--sl-radius-sm);
+  color: var(--sl-fg);
+  font-weight: var(--sl-font-weight-medium);
+  cursor: pointer;
+  user-select: none;
+}
+
+.sl-select-all[data-active] {
+  background-color: var(--sl-muted);
+}
+
+/* ---------- GRUP TOGGLE (selectAll: { groups: true }) ---------- */
+
+/* data-checked yalnızca toggle modundaki grup başlıklarında bulunur */
+.sl-group-label[data-checked] {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-space-2);
+  cursor: pointer;
+}
+
+.sl-group-toggle {
+  display: inline-flex;
+  flex: none;
+}
+
+/* İkon durumu: full / yarım / gizli — 14px check */
+.sl-group-toggle .sl-check {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+  transition: opacity 120ms var(--sl-ease-out);
+}
+
+[data-checked="all"] .sl-check {
+  opacity: 1;
+}
+
+[data-checked="some"] .sl-check {
+  opacity: 0.5;
+}
+
 /* ---------- HAREKET ---------- */
 
 @keyframes sl-spin {
@@ -645,7 +704,8 @@
     outline-offset: -1px;
   }
   .sl-option[data-active],
-  .sl-create[data-active] {
+  .sl-create[data-active],
+  .sl-select-all[data-active] {
     background-color: Highlight;
     color: HighlightText;
   }

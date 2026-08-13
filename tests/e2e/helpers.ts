@@ -23,6 +23,7 @@ export function widget(page: Page, selectId: string) {
     empty: root.locator(".sl-empty"),
     loading: root.locator(".sl-loading"),
     createRow: root.locator(".sl-create"),
+    selectAllRow: root.locator(".sl-select-all"),
     vsizer: root.locator(".sl-vsizer"),
     value: root.locator(".sl-value"),
   };

@@ -30,6 +30,7 @@ const sel = new Selectable("#city", { /* options */ });
 | [`closeOnSelect`](#closeonselect) | `boolean` | `!multiple` | Close after selecting |
 | [`selectOnTab`](#selectontab) | `boolean` | `false` | Tab commits the active option |
 | [`maxSelections`](#maxselections) | `number` | `Infinity` | Multi-select cap |
+| [`selectAll`](#selectall) | `boolean \| { groups?: boolean }` | `false` | "Select all" header row (+ per-group toggles) in multi-mode |
 | [`visibleOptions`](#visibleoptions) | `number` | token cap (~8 rows) | Panel height in option rows before scrolling |
 | [`tags`](#tags) | `boolean \| TagsConfig` | `false` | Create options from free text |
 | [`size`](#size--density) | `"sm" \| "md" \| "lg"` | `"md"` | Control size |
@@ -209,6 +210,40 @@ fast-form-entry habit). Default `false`: `Tab` dismisses without selecting.
 Upper bound for multi-mode. At the limit, further picks are refused and the
 condition is announced to screen readers (the `i18n.maxReached` message).
 
+## `selectAll`
+
+Multiple mode only (ignored — with a console warning — on single selects). A
+pinned *Select all / Deselect all* header row appears above the options:
+
+```js
+new Selectable("#skills", { selectAll: true });
+new Selectable("#cities", { selectAll: { groups: true } }); // + group toggles
+```
+
+- **Scope: the filtered enabled options.** With an active search query the
+  toggle operates on the matches only; disabled options are never touched.
+  The row reads *Select all* until every filtered enabled option is selected,
+  then flips to *Deselect all* (texts: `i18n.selectAll` / `i18n.deselectAll`).
+- **One `change` event per toggle** — the whole batch is applied in a single
+  selection write and a single native sync, never per-item event storms.
+- **`maxSelections` is respected**: selecting adds the missing values in list
+  order until the cap, then stops and announces `i18n.maxReached`. Otherwise
+  the new total is announced with `i18n.selectedCount`.
+- **Keyboard**: the header is a navigable row *before* the first option —
+  `ArrowUp` from the first option reaches it, `Enter`/`Space` toggles. There
+  is also a shortcut: `Ctrl+A` when focus is on the trigger (no-search mode);
+  in search mode `Ctrl+A` keeps its native select-the-text meaning inside the
+  input, so use `Ctrl+Shift+A` instead.
+- **`{ groups: true }`** additionally makes each group header a toggle for
+  *that group's* filtered enabled options (same semantics, same single-event
+  guarantee). The header gets `data-checked="all" | "some" | "none"` for
+  styling and a pointer-only check icon. Per-group keyboard access is out of
+  scope by design — the keyboard path is the options themselves plus the
+  select-all header row.
+- **Async caveat**: with an async `source`, "all" means the options loaded so
+  far for the current query. While `hasMore` is `true` more pages exist on the
+  server, so a select-all is inherently partial — by design.
+
 ## `visibleOptions`
 
 Caps the panel height at N option rows (plus the search bar when present) so
@@ -332,7 +367,8 @@ new Selectable("#city", { i18n: { noResults: "Nothing found", placeholder: "Pick
 ```
 
 Message keys: `placeholder`, `noResults`, `loading`, `searchPlaceholder`,
-`loadError`, `loadingMore` (strings) and `removeItem(label)`, `selectedCount(n)`,
+`loadError`, `loadingMore`, `selectAll`, `deselectAll` (strings) and
+`removeItem(label)`, `selectedCount(n)`,
 `itemSelected(label, total)`, `itemDeselected(label, total)`,
 `resultsFound(n)`, `maxReached(max)`, `createOption(label)` (functions — most
 of these are screen-reader announcements).

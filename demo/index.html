@@ -87,6 +87,25 @@
       </section>
 
       <section>
+        <label for="grouped-multi">Çoklu — gruplu + tümünü seç (grup toggle)</label>
+        <select id="grouped-multi" name="cities" multiple>
+          <optgroup label="Marmara">
+            <option value="34">İstanbul</option>
+            <option value="16">Bursa</option>
+            <option value="41">Kocaeli</option>
+          </optgroup>
+          <optgroup label="Ege">
+            <option value="35">İzmir</option>
+            <option value="09">Aydın</option>
+          </optgroup>
+          <optgroup label="İç Anadolu">
+            <option value="06">Ankara</option>
+            <option value="42">Konya</option>
+          </optgroup>
+        </select>
+      </section>
+
+      <section>
         <label for="multi-counter">Çoklu — +N counter, max 5</label>
         <select id="multi-counter" multiple>
           <option value="1" selected>Elma</option>
@@ -166,9 +185,15 @@
 
       new Selectable("#grouped", { i18n: tr, search: true });
 
-      const multi = new Selectable("#multi", { i18n: tr, clearable: true });
+      const multi = new Selectable("#multi", { i18n: tr, clearable: true, selectAll: true });
       multi.on("change", ({ value }) => {
         document.getElementById("multi-out").textContent = `değer: [${value.join(", ")}]`;
+      });
+
+      new Selectable("#grouped-multi", {
+        i18n: tr,
+        search: true,
+        selectAll: { groups: true },
       });
 
       new Selectable("#multi-counter", {

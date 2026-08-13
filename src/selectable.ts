@@ -43,6 +43,8 @@ interface ResolvedConfig<T> {
   closeOnSelect: boolean;
   selectOnTab: boolean;
   maxSelections: number;
+  selectAll: boolean;
+  selectAllGroups: boolean;
   placeholder: string;
   messages: SelectableMessages;
   virtualThreshold: number;
@@ -56,6 +58,13 @@ const instances = new WeakMap<HTMLSelectElement, Selectable>();
 
 /** Search auto-mode: panels with more options than this get a search box. */
 const SEARCH_AUTO_THRESHOLD = 8;
+
+/**
+ * activeIndex sentinel for the "select all" header row — a navigable virtual
+ * row BEFORE index 0, the same way the create row extends the list past the
+ * end at `filtered.length`. (-1 stays "no active row".)
+ */
+const SELECT_ALL_INDEX = -2;
 
 export class Selectable<T = unknown> {
   readonly select: HTMLSelectElement;
@@ -117,6 +126,14 @@ export class Selectable<T = unknown> {
           realOptions.length > SEARCH_AUTO_THRESHOLD
         : options.search !== false;
 
+    // selectAll is multiple-only; opting in on a single select is ignored.
+    const selectAll = options.selectAll !== undefined && options.selectAll !== false;
+    if (selectAll && !multiple) {
+      console.warn(
+        "[selectable] `selectAll` requires multiple mode — option ignored.",
+      );
+    }
+
     this.cfg = {
       multiple,
       searchable,
@@ -129,6 +146,12 @@ export class Selectable<T = unknown> {
       closeOnSelect: options.closeOnSelect ?? !multiple,
       selectOnTab: options.selectOnTab ?? false,
       maxSelections: options.maxSelections ?? Infinity,
+      selectAll: selectAll && multiple,
+      selectAllGroups:
+        selectAll &&
+        multiple &&
+        typeof options.selectAll === "object" &&
+        options.selectAll.groups === true,
       placeholder:
         options.placeholder ??
         sourceOptions.find((o) => o.value === "")?.label ??
@@ -180,6 +203,7 @@ export class Selectable<T = unknown> {
       searchable,
       multiple,
       clearable: this.cfg.clearable,
+      selectAll: this.cfg.selectAll,
       overflow: this.cfg.overflow,
       size: options.size,
       density: options.density,
@@ -208,6 +232,7 @@ export class Selectable<T = unknown> {
       render: options.render,
       virtualThreshold: this.cfg.virtualThreshold,
       overscan: this.cfg.overscan,
+      groupToggles: this.cfg.selectAllGroups,
     });
     this.panel = new PanelController(
       this.refs.root,
@@ -589,6 +614,57 @@ export class Selectable<T = unknown> {
     if (this.cfg.closeOnSelect) this.close();
   }
 
+  /** The options a select-all toggle operates on: FILTERED and enabled. */
+  private selectAllTargets(): SelectableOption<T>[] {
+    if (!this.cfg.selectAll) return [];
+    return this.store.getState().filtered.filter((o) => !o.disabled);
+  }
+
+  /** The select-all header row is visible (multi + opt-in + toggleable rows). */
+  private selectAllVisible(): boolean {
+    return this.selectAllTargets().length > 0;
+  }
+
+  private toggleSelectAll(): void {
+    const targets = this.selectAllTargets();
+    if (targets.length > 0) this.toggleBatch(targets);
+  }
+
+  /**
+   * Batch toggle over filtered enabled options (select-all / group toggle).
+   * All selected → deselect them all; otherwise select the missing ones in
+   * list order until maxSelections. ONE applySelection either way — a single
+   * change event and a single native sync, never per-item loops.
+   */
+  private toggleBatch(targets: SelectableOption<T>[]): void {
+    const s = this.store.getState();
+    const values = targets.map((o) => o.value);
+    const allSelected = values.every((v) => s.selected.includes(v));
+    if (allSelected) {
+      const drop = new Set(values);
+      const next = s.selected.filter((v) => !drop.has(v));
+      this.applySelection(next, { silent: false });
+      this.live.announce(this.cfg.messages.selectedCount(next.length));
+      return;
+    }
+    const next = [...s.selected];
+    let maxHit = false;
+    for (const v of values) {
+      if (next.includes(v)) continue;
+      if (next.length >= this.cfg.maxSelections) {
+        maxHit = true;
+        break;
+      }
+      next.push(v);
+    }
+    this.applySelection(next, { silent: false });
+    this.live.announce(
+      maxHit
+        ? this.cfg.messages.maxReached(this.cfg.maxSelections)
+        : this.cfg.messages.selectedCount(next.length),
+    );
+  }
+
   /** Tagging: the label for the "create" row, or null when hidden. */
   private createLabel(): string | null {
     if (!this.cfg.tags) return null;
@@ -641,6 +717,10 @@ export class Selectable<T = unknown> {
 
   private selectActive(): boolean {
     const s = this.store.getState();
+    if (s.activeIndex === SELECT_ALL_INDEX && this.selectAllVisible()) {
+      this.toggleSelectAll();
+      return true;
+    }
     if (s.activeIndex === this.createIndex() && s.activeIndex >= 0) {
       this.doCreate();
       return true;
@@ -654,15 +734,30 @@ export class Selectable<T = unknown> {
   private moveActive(delta: number): void {
     const s = this.store.getState();
     if (!s.open) return;
-    // The create row is a navigable virtual row at the end of the list.
+    // Navigable virtual rows extend the option list on both sides: the
+    // select-all header sits BEFORE index 0 (sentinel -2), the create row
+    // after the end (= filtered.length). Movement runs in a linear space
+    // where linear 0 is the select-all row when visible.
+    const base = this.selectAllVisible() ? 1 : 0;
     const n = s.filtered.length + (this.createLabel() !== null ? 1 : 0);
-    if (n === 0) return;
-    let i = s.activeIndex < 0 ? (delta > 0 ? -1 : n) : s.activeIndex;
-    for (let steps = 0; steps < n; steps++) {
-      i += delta > 0 ? 1 : -1;
-      if (i < 0 || i >= n) return; // edges stop, no wrap (APG)
-      if (i === s.filtered.length || !s.filtered[i]!.disabled) {
-        this.store.setState({ activeIndex: i });
+    const total = base + n;
+    if (total === 0) return;
+    const enabledAt = (li: number): boolean => {
+      if (base === 1 && li === 0) return true; // select-all header
+      const i = li - base;
+      return i === s.filtered.length || !s.filtered[i]!.disabled;
+    };
+    let li: number;
+    if (s.activeIndex === SELECT_ALL_INDEX) li = base === 1 ? 0 : delta > 0 ? -1 : total;
+    else if (s.activeIndex < 0) li = delta > 0 ? -1 : total;
+    else li = s.activeIndex + base;
+    for (let steps = 0; steps < total; steps++) {
+      li += delta > 0 ? 1 : -1;
+      if (li < 0 || li >= total) return; // edges stop, no wrap (APG)
+      if (enabledAt(li)) {
+        this.store.setState({
+          activeIndex: base === 1 && li === 0 ? SELECT_ALL_INDEX : li - base,
+        });
         return;
       }
     }
@@ -774,13 +869,32 @@ export class Selectable<T = unknown> {
       );
       if (createLabel !== null) this.refs.empty.hidden = true;
 
+      const onSelectAll =
+        s.activeIndex === SELECT_ALL_INDEX && this.selectAllVisible();
+      if (this.cfg.selectAll) {
+        const targets = this.selectAllTargets();
+        const all =
+          targets.length > 0 &&
+          targets.every((o) => s.selected.includes(o.value));
+        this.list.setSelectAll(
+          targets.length > 0
+            ? all
+              ? this.cfg.messages.deselectAll
+              : this.cfg.messages.selectAll
+            : null,
+          { all, active: onSelectAll },
+        );
+      }
+
       const active = s.filtered[s.activeIndex];
       this.setActiveDescendant(
-        onCreate
-          ? this.list.createId
-          : active
-            ? this.list.optionId(s.activeIndex)
-            : null,
+        onSelectAll
+          ? this.list.selectAllId
+          : onCreate
+            ? this.list.createId
+            : active
+              ? this.list.optionId(s.activeIndex)
+              : null,
       );
     }
   }
@@ -831,8 +945,25 @@ export class Selectable<T = unknown> {
       "click",
       (e) => {
         const target = e.target as HTMLElement;
+        if (target.closest(".sl-select-all")) {
+          this.toggleSelectAll();
+          return;
+        }
         if (target.closest(".sl-create")) {
           this.doCreate();
+          return;
+        }
+        const group = this.cfg.selectAllGroups
+          ? target.closest<HTMLElement>(".sl-group-label[data-group]")
+          : null;
+        if (group) {
+          this.toggleBatch(
+            this.store
+              .getState()
+              .filtered.filter(
+                (o) => o.group === group.dataset.group && !o.disabled,
+              ),
+          );
           return;
         }
         const node = target.closest<HTMLElement>(".sl-option");
@@ -853,14 +984,16 @@ export class Selectable<T = unknown> {
       "pointermove",
       (e) => {
         const target = e.target as HTMLElement;
-        const idx = target.closest(".sl-create")
-          ? this.createIndex()
-          : (() => {
-              const node = target.closest<HTMLElement>(".sl-option");
-              if (!node || node.hasAttribute("aria-disabled")) return -1;
-              return Number(node.dataset.index);
-            })();
-        if (idx >= 0 && idx !== this.store.getState().activeIndex) {
+        const idx = target.closest(".sl-select-all")
+          ? SELECT_ALL_INDEX
+          : target.closest(".sl-create")
+            ? this.createIndex()
+            : (() => {
+                const node = target.closest<HTMLElement>(".sl-option");
+                if (!node || node.hasAttribute("aria-disabled")) return -1;
+                return Number(node.dataset.index);
+              })();
+        if (idx !== -1 && idx !== this.store.getState().activeIndex) {
           this.store.setState({ activeIndex: idx });
         }
       },
@@ -939,6 +1072,21 @@ export class Selectable<T = unknown> {
   private onPanelKeydown(e: KeyboardEvent): void {
     const s = this.store.getState();
     const inInput = e.target === this.refs.searchInput;
+
+    // Select-all toggle: Ctrl+A on the trigger (no-search mode). Inside the
+    // search input Ctrl+A stays native text-select — Ctrl+Shift+A instead.
+    if (
+      this.cfg.selectAll &&
+      e.ctrlKey &&
+      !e.altKey &&
+      !e.metaKey &&
+      (e.key === "a" || e.key === "A") &&
+      (!inInput || e.shiftKey)
+    ) {
+      e.preventDefault();
+      this.toggleSelectAll();
+      return;
+    }
 
     switch (e.key) {
       case "ArrowDown":

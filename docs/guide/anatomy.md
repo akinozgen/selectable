@@ -43,7 +43,17 @@ ever leaks into the host page.
       <input class="sl-search-input" role="combobox" aria-autocomplete="list">
     </div>
     <div class="sl-listbox" role="listbox">
+      <!-- selectAll (multiple mode): pinned header row above the options -->
+      <div class="sl-select-all" role="option" aria-selected="false">
+        <span class="sl-option-label">Select all</span>
+        <svg class="sl-check"></svg>
+      </div>
       <div class="sl-group-label">Marmara</div>
+      <!-- selectAll: { groups: true } adds data-group/data-checked + icon:
+           <div class="sl-group-label" data-group="Marmara" data-checked="none">
+             <span class="sl-group-text">Marmara</span>
+             <span class="sl-group-toggle" aria-hidden="true">…✓…</span>
+           </div> -->
       <div class="sl-option" role="option" aria-selected="false">
         <span class="sl-option-label">Istanbul</span>
         <svg class="sl-check"></svg>
@@ -81,6 +91,8 @@ ever leaks into the host page.
 | `.sl-listbox` | Option list (`role="listbox"`) |
 | `.sl-option` / `.sl-option-label` / `.sl-check` | Option row and its parts |
 | `.sl-group-label` | Group heading |
+| `.sl-group-text` / `.sl-group-toggle` | Group heading parts in `selectAll: { groups: true }` mode (toggle icon is pointer-only, `aria-hidden`) |
+| `.sl-select-all` | The pinned "Select all / Deselect all" header row (`selectAll`, multiple mode) |
 | `.sl-empty` | No-results state |
 | `.sl-loading` / `.sl-skeleton` | Async loading skeleton |
 | `.sl-create` | The "Create …" row in tags mode |
@@ -128,6 +140,9 @@ against these:
 | `.sl[data-disabled]` | Component disabled |
 | `.sl-trigger[data-loading]` | Async load in progress |
 | `.sl-panel[data-placement="top"]` | Panel opened upward |
+| `.sl-select-all[aria-selected="true"]` | Every filtered enabled option is selected |
+| `.sl-select-all[data-active]` | Select-all header is the active (highlighted) row |
+| `.sl-group-label[data-checked="all"/"some"/"none"]` | Group toggle state (`selectAll: { groups: true }`) |
 
 Example — bold the selected option:
 
@@ -151,6 +166,12 @@ Example — bold the selected option:
   elements inside a combobox violates WCAG 4.1.2 (nested interactive), so the
   keyboard equivalent is `Backspace`, and the result is announced through
   `.sl-live`.
+- **The `.sl-select-all` header is a virtual option row** like `.sl-create`:
+  it lives inside the listbox (sticky above the scrolling options), is reached
+  with `ArrowUp` from the first option, and is toggled with `Enter`/`Space` or
+  `Ctrl+A` (`Ctrl+Shift+A` in search mode). Group toggles (`.sl-group-toggle`)
+  are pointer-only — per-group keyboard access is intentionally out of scope;
+  the keyboard path is the options themselves plus the select-all header.
 - **Values created via tags** are appended to the native select as
   `<option data-sl-created>`.
 - This structure is a contract: class names and attributes won't break in

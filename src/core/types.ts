@@ -24,6 +24,8 @@ export interface SelectableMessages {
   createOption: (label: string) => string;
   loadError: string;
   loadingMore: string;
+  selectAll: string;
+  deselectAll: string;
 }
 
 export interface SearchConfig<T = unknown> {
@@ -91,6 +93,11 @@ export interface SelectableOptions<T = unknown> {
   closeOnSelect?: boolean;
   selectOnTab?: boolean;
   maxSelections?: number;
+  /**
+   * "Select all / Deselect all" header row (multiple mode only).
+   * `{ groups: true }` additionally makes group headers per-group toggles.
+   */
+  selectAll?: boolean | { groups?: boolean };
   /**
    * Panel height as a number of visible option rows before scrolling
    * (like bootstrap-select's `size`). Default: token cap (~8 rows).
