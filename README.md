@@ -5,6 +5,8 @@ A framework-agnostic, zero-dependency select component. As flexible as select2, 
 [![npm](https://img.shields.io/npm/v/%40akinozgen17%2Fselectablejs)](https://www.npmjs.com/package/@akinozgen17/selectablejs)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
+**Docs & live demos:** https://akinozgen.github.io/selectable/
+
 ## Why
 
 - **Zero dependencies.** Vanilla TypeScript. ESM + CJS + IIFE builds, one CSS file, ~10 KB gzip.

@@ -1,3 +1,7 @@
+---
+title: Migrating from bootstrap-select
+---
+
 # Migrating from bootstrap-select
 
 ## Why migrate (and what you give up)

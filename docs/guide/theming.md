@@ -1,3 +1,7 @@
+---
+title: Theming
+---
+
 # Theming
 
 Selectable's entire appearance derives from `--sl-*` prefixed CSS custom

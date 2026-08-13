@@ -1,0 +1,12 @@
+/* Side-by-side demo layout (e.g. size comparison on the playground) */
+.demo-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.demo-row .sl-demo {
+  flex: 1 1 200px;
+  margin: 0;
+}

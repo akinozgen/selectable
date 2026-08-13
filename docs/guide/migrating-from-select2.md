@@ -1,3 +1,7 @@
+---
+title: Migrating from select2
+---
+
 # Migrating from select2
 
 ## Why migrate (and what you give up)

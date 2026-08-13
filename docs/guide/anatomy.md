@@ -1,3 +1,7 @@
+---
+title: DOM Anatomy
+---
+
 # DOM Anatomy
 
 The DOM structure Selectable renders, and the class/attribute contract. You

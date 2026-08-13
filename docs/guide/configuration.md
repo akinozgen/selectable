@@ -1,3 +1,7 @@
+---
+title: Configuration Reference
+---
+
 # Configuration Reference
 
 All options are passed as the second argument of
@@ -131,6 +135,20 @@ folds to `i`). Local filtering is instantaneous; `debounceMs` only applies to
 async sources. On touch devices the search input is deliberately not
 auto-focused, so the virtual keyboard doesn't pop open uninvited.
 
+Try the default filter (type `istanbul` or `canakkale`):
+
+<Demo
+  placeholder="Search a province…"
+  :options="[
+    { value: '06', label: 'Ankara' },
+    { value: '17', label: 'Çanakkale' },
+    { value: '34', label: 'İstanbul' },
+    { value: '35', label: 'İzmir' },
+    { value: '63', label: 'Şanlıurfa' },
+  ]"
+  :config="{ search: true }"
+/>
+
 ## `clearable`
 
 When `true`, an ✕ appears on the trigger while there is a selection and clears
@@ -190,6 +208,20 @@ elements — they are included in form submissions. When the query matches
 **zero** options, the create row is auto-activated, so a bare `Enter` creates
 the tag immediately. Tagging requires search; enabling `tags` turns search on
 automatically (if you force `search: false`, the create row never appears).
+
+Type a label that doesn't exist yet and press `Enter`:
+
+<Demo
+  multiple
+  placeholder="Add labels…"
+  :options="[
+    { value: 'bug', label: 'bug' },
+    { value: 'feature', label: 'feature' },
+    { value: 'docs', label: 'docs' },
+  ]"
+  :config="{ tags: true, clearable: true }"
+  show-value
+/>
 
 ## `size` / `density`
 

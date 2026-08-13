@@ -1,4 +1,10 @@
+---
+title: LLM Cheat Sheet
+---
+
 # Selectable v0.1.0 — AI Agent Cheat Sheet
+
+> The raw Markdown of this page ships inside the npm package (`docs/llm.md`) — point your AI agent at it directly.
 
 <!-- Single-file integration reference. Verified against src/ at v0.1.0. -->
 

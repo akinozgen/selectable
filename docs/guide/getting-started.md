@@ -1,3 +1,7 @@
+---
+title: Getting Started
+---
+
 # Getting Started
 
 By the end of this guide you'll have enhanced an existing native `<select>`
@@ -69,6 +73,21 @@ sel.on("change", ({ value, options }) => {
   console.log(options.map((o) => o.label)); // ["Istanbul"]
 });
 ```
+
+The exact markup above, live:
+
+<Demo
+  multiple
+  :options="[
+    { value: '34', label: 'Istanbul', group: 'Marmara', selected: true },
+    { value: '16', label: 'Bursa', group: 'Marmara' },
+    { value: '06', label: 'Ankara', group: 'Central Anatolia' },
+    { value: '42', label: 'Konya', group: 'Central Anatolia', disabled: true },
+  ]"
+  placeholder="Choose a city…"
+  :config="{ clearable: true }"
+  show-value
+/>
 
 What gets read automatically:
 
