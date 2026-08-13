@@ -14,6 +14,7 @@ export const defaultMessages: SelectableMessages = {
   maxReached: (max) => `Maximum ${max} selections`,
   createOption: (label) => `Create "${label}"`,
   loadError: "Failed to load results",
+  loadingMore: "Loading more…",
 };
 
 /** Turkish message pack (tree-shaken away if unused). */
@@ -30,6 +31,7 @@ export const tr: SelectableMessages = {
   maxReached: (max) => `En fazla ${max} seçim yapılabilir`,
   createOption: (label) => `"${label}" oluştur`,
   loadError: "Sonuçlar yüklenemedi",
+  loadingMore: "Daha fazla yükleniyor…",
 };
 
 export function resolveMessages(

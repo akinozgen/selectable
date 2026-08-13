@@ -16,6 +16,7 @@ export type {
   RenderConfig,
   TagsConfig,
   AsyncDataSource,
+  AsyncLoadResult,
 } from "./core/types";
 export { computePosition } from "./positioning/compute";
 export { autoUpdate } from "./positioning/auto-update";

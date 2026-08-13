@@ -123,7 +123,7 @@
       </section>
 
       <section>
-        <label for="remote">Remote — async arama (sahte API, 400ms)</label>
+        <label for="remote">Remote — async arama + sayfalama (sahte API, 100 kayıt, sayfa başı 20, 400ms)</label>
         <select id="remote" name="uye"></select>
         <output id="remote-out"></output>
       </section>
@@ -195,21 +195,29 @@
 
       new Selectable("#tagged", { i18n: tr, tags: true });
 
+      // 100 sahte üye: ilk 10'u gerçek isim, kalanı "Üye NN" — sayfalı API.
       const uyeler = ["Ahmet Yılmaz", "Ayşe Demir", "Mehmet Kaya", "Fatma Çelik",
         "Mustafa Şahin", "Zeynep Arslan", "Ali Doğan", "Emine Koç",
         "Hüseyin Aydın", "Hatice Özdemir"];
+      for (let i = 11; i <= 100; i++) uyeler.push(`Üye ${String(i).padStart(3, "0")}`);
+      const PAGE_SIZE = 20;
       const remote = new Selectable("#remote", {
         i18n: tr,
         clearable: true,
-        source: asyncSource(async (q, { signal }) => {
+        source: asyncSource(async (q, { page, signal }) => {
           await new Promise((r, j) => {
             const t = setTimeout(r, 400);
             signal.addEventListener("abort", () => { clearTimeout(t); j(new DOMException("Aborted", "AbortError")); });
           });
-          return uyeler
-            .filter((u) => u.toLocaleLowerCase("tr").includes(q.toLocaleLowerCase("tr")))
-            .map((u, i) => ({ value: `u${i}`, label: u }));
-        }),
+          const hits = uyeler
+            .map((u, i) => ({ value: `u${i}`, label: u }))
+            .filter((o) => o.label.toLocaleLowerCase("tr").includes(q.toLocaleLowerCase("tr")));
+          const start = page * PAGE_SIZE;
+          return {
+            options: hits.slice(start, start + PAGE_SIZE),
+            hasMore: start + PAGE_SIZE < hits.length,
+          };
+        }, { cacheSize: 0 }),
       });
       remote.on("change", ({ options }) => {
         document.getElementById("remote-out").textContent =

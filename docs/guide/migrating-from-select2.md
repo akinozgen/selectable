@@ -53,6 +53,7 @@ namespace is `window.Selectable`, the class is `Selectable.Selectable`.)
 | `multiple: true` | `multiple: true` | Usually unnecessary — derived from `<select multiple>`. |
 | `data: [{id, text}]` | `source: [{value, label}]` | `id`→`value` (string), `text`→`label`. Grouped `children` become a flat `group` field. |
 | `ajax: { url, delay, data, processResults }` | `source: asyncSource(fetcher)` + `search.debounceMs` | Fetch-based instead of transport-based; example below. `cache: true` maps to the built-in LRU cache (`cacheSize`). |
+| `ajax` pagination (`params.page` + `processResults` → `pagination: { more }`) | fetcher receives `{ page }` (0-based) and returns `{ options, hasMore }` | Same infinite scroll: nearing the list end loads the next page for the current query and appends it. Returning a plain array = single page (`hasMore: false`). |
 | `minimumInputLength` | `asyncSource(..., { minQueryLength })` (remote) / `search.minQueryLength` (local) | Same behavior. |
 | `maximumSelectionLength` | `maxSelections` | Identical; hitting the cap is announced to screen readers. |
 | `minimumResultsForSearch` | `search: true/false` | Selectable's automatic threshold is 8; `Infinity` (disable search) → `search: false`. There is no numeric threshold setting. |

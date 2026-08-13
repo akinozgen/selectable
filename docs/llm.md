@@ -63,7 +63,7 @@ A string selector enhances **all** matches (returned instance = first match; oth
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `source` | `SelectableOption[] \| AsyncDataSource` | read from native `<select>` | Data. Pass `asyncSource(fetcher)` for remote data (server-side filtering). |
+| `source` | `SelectableOption[] \| AsyncDataSource` | read from native `<select>` | Data. Pass `asyncSource(fetcher)` for remote data (server-side filtering; optional pagination — see below). |
 | `multiple` | `boolean` | `select.multiple` | Multi-select with chips. |
 | `disabled` | `boolean` | `select.disabled` | Disabled state. |
 | `placeholder` | `string` | empty-value first `<option>` label, else i18n | Placeholder text. |
@@ -97,12 +97,15 @@ A string selector enhances **all** matches (returned instance = first match; oth
 
 ```ts
 asyncSource<T>(
-  fetcher: (query: string, ctx: { signal: AbortSignal }) => Promise<SelectableOption<T>[]>,
-  opts?: { minQueryLength?: number /* 0 */, cacheSize?: number /* LRU, 50; 0 = off */ }
+  fetcher: (query: string, ctx: { page: number; signal: AbortSignal }) =>
+    Promise<SelectableOption<T>[] | { options: SelectableOption<T>[]; hasMore?: boolean }>,
+  opts?: { minQueryLength?: number /* 0 */, cacheSize?: number /* LRU keyed `page:query`, 50; 0 = off */ }
 ): AsyncDataSource<T>
 ```
 
 Core handles debounce (`search.debounceMs`) + abort-on-newer-query. Selected async values get a real `<option>` appended to the native select so forms submit them.
+
+**Pagination / infinite scroll:** `ctx.page` is 0-based. Returning a plain array = single page, no more (existing fetchers unchanged). Return `{ options, hasMore: true }` to page: scrolling the open list to within ~2 rows of the end fetches `page + 1` for the same query and **appends** (duplicate values skipped, scroll position preserved, existing options stay visible — skeleton shows at the list end, listbox `aria-busy`). A new query resets to page 0 and aborts the in-flight page fetch; a failed page keeps the loaded options and retries on the next scroll.
 
 ## Methods (complete)
 
@@ -138,7 +141,7 @@ Instance events via `sel.on(type, handler)` — handler receives the payload dir
 | `open` | `void` | Panel opened. |
 | `close` | `void` | Panel closed. |
 | `search` | `{ query: string }` | Query changed (typing or `search()`). |
-| `load` | `{ query: string; count: number }` | Async load resolved. |
+| `load` | `{ query: string; count: number; page: number; hasMore: boolean }` | Async page load resolved (`count` = options in that page's response; fires per page). |
 | `error` | `{ error: unknown }` | Async load rejected. |
 | `create` | `{ option: SelectableOption }` | Tag created from free text. |
 | `clear` | `void` | `clear()` / clear button. |
@@ -254,10 +257,15 @@ sel.on("create", ({ option }) => console.log("created", option.value));
 import { Selectable, asyncSource } from "@akinozgen17/selectablejs";
 new Selectable("#user", {
   source: asyncSource(
-    async (query, { signal }) => {
-      const res = await fetch(`/api/users?q=${encodeURIComponent(query)}`, { signal });
+    async (query, { page, signal }) => {
+      const res = await fetch(`/api/users?q=${encodeURIComponent(query)}&page=${page}`, { signal });
       if (!res.ok) throw new Error(res.statusText);
-      return (await res.json()).map((u) => ({ value: String(u.id), label: u.name }));
+      const data = await res.json();
+      // Plain array return also works → single page, no infinite scroll.
+      return {
+        options: data.results.map((u) => ({ value: String(u.id), label: u.name })),
+        hasMore: data.hasNextPage, // true → scrolling near the list end loads page + 1
+      };
     },
     { minQueryLength: 2 },
   ),

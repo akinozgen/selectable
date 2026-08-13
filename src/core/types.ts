@@ -23,6 +23,7 @@ export interface SelectableMessages {
   maxReached: (max: number) => string;
   createOption: (label: string) => string;
   loadError: string;
+  loadingMore: string;
 }
 
 export interface SearchConfig<T = unknown> {
@@ -47,10 +48,23 @@ export interface RenderConfig<T = unknown> {
   noResults?(query: string): Node | string;
 }
 
+/**
+ * A page of async results. Plain arrays keep meaning "single page, no more"
+ * (hasMore = false) — existing sources are unaffected.
+ */
+export type AsyncLoadResult<T = unknown> =
+  | SelectableOption<T>[]
+  | { options: SelectableOption<T>[]; hasMore?: boolean };
+
 /** Async data source contract (see data/async-source.ts for the factory). */
 export interface AsyncDataSource<T = unknown> {
   readonly mode: "async";
-  load(ctx: { query: string; signal: AbortSignal }): Promise<SelectableOption<T>[]>;
+  load(ctx: {
+    query: string;
+    /** 0-based page index; page > 0 means "load more" for the same query. */
+    page: number;
+    signal: AbortSignal;
+  }): Promise<AsyncLoadResult<T>>;
 }
 
 export interface TagsConfig<T = unknown> {
@@ -97,7 +111,7 @@ export interface SelectableEventMap<T = unknown> {
   open: void;
   close: void;
   search: { query: string };
-  load: { query: string; count: number };
+  load: { query: string; count: number; page: number; hasMore: boolean };
   error: { error: unknown };
   create: { option: SelectableOption<T> };
   clear: void;
@@ -118,4 +132,10 @@ export interface SelectableState<T = unknown> {
   open: boolean;
   disabled: boolean;
   loading: boolean;
+  /** Current 0-based page of the async result set (pagination). */
+  page: number;
+  /** Whether the async source reported more pages for the current query. */
+  hasMore: boolean;
+  /** A page > 0 fetch is in flight (list stays visible, unlike `loading`). */
+  loadingMore: boolean;
 }

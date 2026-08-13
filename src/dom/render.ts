@@ -296,6 +296,11 @@ export class ListRenderer<T> {
     return `${this.cfg.baseId}-opt-${optionIndex}`;
   }
 
+  /** Measured option row height (px) — used by the infinite-scroll threshold. */
+  get rowHeight(): number {
+    return this.optionHeight;
+  }
+
   /** Full data refresh (filter change, options change). */
   setData(filtered: SelectableOption<T>[], selected: string[], activeIndex: number): void {
     this.rows = flattenRows(filtered);

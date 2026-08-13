@@ -9,7 +9,7 @@ import type {
   SearchConfig,
   TagsConfig,
 } from "./core/types";
-import { isDataSource } from "./data/async-source";
+import { isDataSource, normalizeLoadResult } from "./data/async-source";
 import { resolveMessages } from "./core/i18n";
 import {
   readNativeOptions,
@@ -168,6 +168,9 @@ export class Selectable<T = unknown> {
       open: false,
       disabled: options.disabled ?? select.disabled,
       loading: false,
+      page: 0,
+      hasMore: false,
+      loadingMore: false,
     });
     this.prev = this.store.getState();
     this.emitter = createEmitter<SelectableEventMap<T>>();
@@ -424,7 +427,10 @@ export class Selectable<T = unknown> {
       this.store.setState({ query });
       this.emitter.emit("search", { query });
       if (this.queryTimer) clearTimeout(this.queryTimer);
-      this.queryTimer = setTimeout(() => this.runLoad(query), this.cfg.debounceMs);
+      this.queryTimer = setTimeout(() => {
+        this.queryTimer = null;
+        this.runLoad(query);
+      }, this.cfg.debounceMs);
       return;
     }
     const filtered = this.computeFiltered(query);
@@ -445,23 +451,33 @@ export class Selectable<T = unknown> {
     }
   }
 
-  /** Async load with abort-on-newer-query; keeps stale results while loading. */
+  /**
+   * Async load with abort-on-newer-query; keeps stale results while loading.
+   * Always fetches page 0 — a new query resets pagination (and aborts any
+   * in-flight loadMore via the shared loadAbort chain).
+   */
   private async runLoad(query: string): Promise<void> {
     const source = this.cfg.asyncSource;
     if (!source) return;
     this.loadAbort?.abort();
     const abort = (this.loadAbort = new AbortController());
-    this.store.setState({ loading: true });
+    this.store.setState({ loading: true, loadingMore: false, page: 0 });
     try {
-      const options = await source.load({ query, signal: abort.signal });
+      const result = await source.load({ query, page: 0, signal: abort.signal });
       if (abort.signal.aborted || this.destroyed) return;
+      const { options, hasMore } = normalizeLoadResult(result);
       this.setOptions(options);
       const s = this.store.getState();
       this.store.setState({
         loading: false,
+        page: 0,
+        hasMore,
         activeIndex: s.filtered.findIndex((o) => !o.disabled),
       });
-      this.emitter.emit("load", { query, count: options.length });
+      // Fresh page-0 results replace the list — scroll back to the top
+      // (otherwise a bottom-clamped scroll position can't re-trigger loadMore).
+      this.refs.listbox.scrollTop = 0;
+      this.emitter.emit("load", { query, count: options.length, page: 0, hasMore });
       if (this.isOpen) {
         this.live.announce(this.cfg.messages.resultsFound(options.length));
       }
@@ -470,6 +486,65 @@ export class Selectable<T = unknown> {
       this.store.setState({ loading: false });
       this.emitter.emit("error", { error });
       this.live.announce(this.cfg.messages.loadError);
+    }
+  }
+
+  /**
+   * Fetches the next page for the CURRENT query and appends it (infinite
+   * scroll). Uses `loadingMore` — the list stays visible, only the skeleton
+   * block at the list end shows. Shares the loadAbort chain with runLoad, so
+   * a newer query aborts an in-flight loadMore.
+   */
+  private async loadMore(): Promise<void> {
+    const source = this.cfg.asyncSource;
+    const s = this.store.getState();
+    if (!source || !s.hasMore || s.loading || s.loadingMore) return;
+    const query = s.query;
+    const page = s.page + 1;
+    this.loadAbort?.abort();
+    const abort = (this.loadAbort = new AbortController());
+    this.store.setState({ loadingMore: true });
+    this.live.announce(this.cfg.messages.loadingMore);
+    try {
+      const result = await source.load({ query, page, signal: abort.signal });
+      if (abort.signal.aborted || this.destroyed) return;
+      const { options, hasMore } = normalizeLoadResult(result);
+      // Idempotent merge: skip values already present (no double rendering).
+      const current = this.store.getState().options;
+      const seen = new Set(current.map((o) => o.value));
+      const fresh = options.filter((o) => o.value !== "" && !seen.has(o.value));
+      const scrollTop = this.refs.listbox.scrollTop; // preserve scroll position
+      this.setOptions([...current, ...fresh]);
+      this.store.setState({ loadingMore: false, page, hasMore });
+      this.refs.listbox.scrollTop = scrollTop;
+      this.emitter.emit("load", { query, count: options.length, page, hasMore });
+      if (this.isOpen) {
+        this.live.announce(
+          this.cfg.messages.resultsFound(this.store.getState().options.length),
+        );
+      }
+    } catch (error) {
+      if (abort.signal.aborted || this.destroyed) return;
+      // Keep existing options; hasMore stays true → next scroll retries.
+      this.store.setState({ loadingMore: false });
+      this.emitter.emit("error", { error });
+      this.live.announce(this.cfg.messages.loadError);
+    }
+  }
+
+  /** Scroll-position trigger for loadMore (~2 option rows before the end). */
+  private maybeLoadMore(): void {
+    if (!this.cfg.asyncSource) return;
+    const s = this.store.getState();
+    // queryTimer pending = a newer query is debouncing; its runLoad resets
+    // pagination — fetching page+1 for the old list would mix result sets.
+    if (!s.open || !s.hasMore || s.loading || s.loadingMore || this.queryTimer) {
+      return;
+    }
+    const box = this.refs.listbox;
+    const threshold = 2 * this.list.rowHeight;
+    if (box.scrollTop + box.clientHeight >= box.scrollHeight - threshold) {
+      void this.loadMore();
     }
   }
 
@@ -685,7 +760,11 @@ export class Selectable<T = unknown> {
       } else if (s.selected !== p.selected || s.activeIndex !== p.activeIndex) {
         this.list.setMarkers(s.selected, s.activeIndex);
       }
-      if (s.loading !== p.loading) this.list.setLoading(s.loading);
+      if (s.loading !== p.loading || s.loadingMore !== p.loadingMore) {
+        // loadingMore reuses the skeleton block at the list end — it shows
+        // alongside the options (the list is never blanked while appending).
+        this.list.setLoading(s.loading || s.loadingMore);
+      }
 
       const createLabel = this.createLabel();
       const onCreate = createLabel !== null && s.activeIndex === s.filtered.length;
@@ -764,6 +843,12 @@ export class Selectable<T = unknown> {
       },
       { signal },
     );
+    // Infinite scroll: near the list end + hasMore → fetch the next page.
+    // Separate from ListRenderer's windowing listener — data stays out of it.
+    listbox.addEventListener("scroll", () => this.maybeLoadMore(), {
+      signal,
+      passive: true,
+    });
     listbox.addEventListener(
       "pointermove",
       (e) => {

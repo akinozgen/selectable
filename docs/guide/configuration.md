@@ -90,10 +90,44 @@ new Selectable("#user", {
 
 In async mode the server does the filtering; the core manages debouncing
 (`search.debounceMs`, default 250 ms), cancelling stale requests
-(AbortController), and an LRU query cache (`cacheSize`, default 50; `0`
-disables it). Selected async values are appended to the native select as real
-`<option>` elements so the form can submit them. If a load fails, an `error`
-event is emitted and the failure is announced to screen readers.
+(AbortController), and an LRU cache keyed per page and query (`cacheSize`,
+default 50; `0` disables it). Selected async values are appended to the native
+select as real `<option>` elements so the form can submit them. If a load
+fails, an `error` event is emitted and the failure is announced to screen
+readers.
+
+**Remote pagination / infinite scroll.** The fetcher also receives a 0-based
+`page` in its context. Returning a plain array means "single page, no more"
+(exactly the behavior above — existing fetchers keep working unchanged).
+Return `{ options, hasMore }` instead to enable paging:
+
+```js
+new Selectable("#user", {
+  source: asyncSource(async (query, { page, signal }) => {
+    const res = await fetch(
+      `/api/users?q=${encodeURIComponent(query)}&page=${page}`,
+      { signal },
+    );
+    if (!res.ok) throw new Error(res.statusText);
+    const data = await res.json();
+    return {
+      options: data.results.map((u) => ({ value: String(u.id), label: u.name })),
+      hasMore: data.hasNextPage,
+    };
+  }),
+});
+```
+
+While `hasMore` is `true`, scrolling the list to within ~2 rows of its end
+fetches the next page **for the same query** and appends it (duplicate values
+are skipped; the scroll position is preserved). During the append the existing
+options stay visible — the loading skeleton shows at the end of the list and
+the listbox gets `aria-busy="true"`; the start of the fetch is announced with
+the `i18n.loadingMore` message and the new total with `resultsFound(n)`.
+Typing a new query resets to page 0 and aborts any in-flight page fetch. If a
+page fetch fails, the options loaded so far are kept, `error` is emitted, and
+the next scroll retries the same page. Each resolved page emits a `load` event
+with `{ query, count, page, hasMore }`.
 
 ## `multiple`
 
@@ -298,7 +332,7 @@ new Selectable("#city", { i18n: { noResults: "Nothing found", placeholder: "Pick
 ```
 
 Message keys: `placeholder`, `noResults`, `loading`, `searchPlaceholder`,
-`loadError` (strings) and `removeItem(label)`, `selectedCount(n)`,
+`loadError`, `loadingMore` (strings) and `removeItem(label)`, `selectedCount(n)`,
 `itemSelected(label, total)`, `itemDeselected(label, total)`,
 `resultsFound(n)`, `maxReached(max)`, `createOption(label)` (functions — most
 of these are screen-reader announcements).
@@ -338,7 +372,7 @@ automatically.
 | `change` | `{ value: string[], options }` | Selection changed |
 | `open` / `close` | — | Panel opened / closed |
 | `search` | `{ query }` | Query changed |
-| `load` | `{ query, count }` | Async load finished |
+| `load` | `{ query, count, page, hasMore }` | Async page load finished (`count` = options in that page's response) |
 | `error` | `{ error }` | Async load failed |
 | `create` | `{ option }` | Tag created |
 | `clear` | — | Selection cleared |

@@ -93,7 +93,7 @@ test.describe("#remote — async source", () => {
     });
 
     await openViaClick(w);
-    await expect(w.options).toHaveCount(10); // full member list for empty query
+    await expect(w.options).toHaveCount(20); // first page (pageSize 20) for empty query
 
     const flags = await page.evaluate(
       () => (window as unknown as { __slLoadFlags: { busy: boolean; loadingShown: boolean } }).__slLoadFlags,
@@ -109,7 +109,7 @@ test.describe("#remote — async source", () => {
     const errors = watchErrors(page);
     const w = widget(page, "remote");
     await openViaClick(w);
-    await expect(w.options).toHaveCount(10);
+    await expect(w.options).toHaveCount(20);
 
     // 300ms between keys: past the 250ms debounce, inside the 400ms latency —
     // the "a" load is guaranteed in-flight when "ah" supersedes it.
@@ -124,7 +124,7 @@ test.describe("#remote — async source", () => {
   test("selecting a remote result writes it into the native select", async ({ page }) => {
     const w = widget(page, "remote");
     await openViaClick(w);
-    await expect(w.options).toHaveCount(10);
+    await expect(w.options).toHaveCount(20);
 
     await w.options.filter({ hasText: "Ahmet Yılmaz" }).click();
 
@@ -136,5 +136,99 @@ test.describe("#remote — async source", () => {
       return o ? { value: o.value, selected: o.selected, label: o.textContent } : null;
     });
     expect(created).toEqual({ value: "u0", selected: true, label: "Ahmet Yılmaz" });
+  });
+});
+
+test.describe("#remote — pagination (infinite scroll)", () => {
+  /** Rendered option values inside the listbox (for duplicate checks). */
+  function optionValues(w: ReturnType<typeof widget>): Promise<string[]> {
+    return w.root.evaluate((root) =>
+      Array.from(root.querySelectorAll<HTMLElement>(".sl-option")).map(
+        (o) => o.dataset.value ?? "",
+      ),
+    );
+  }
+
+  /** Scrolls the listbox to its bottom, which triggers the loadMore path. */
+  async function scrollListboxToBottom(w: ReturnType<typeof widget>): Promise<void> {
+    await w.listbox.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+  }
+
+  test("opening renders the first page only", async ({ page }) => {
+    const w = widget(page, "remote");
+    await openViaClick(w);
+    await expect(w.options).toHaveCount(20);
+    await expect(w.options.first()).toHaveText("Ahmet Yılmaz");
+    await expect(w.loading).toBeHidden(); // skeleton gone once page 0 is in
+  });
+
+  test("scrolling to the bottom shows the skeleton, then appends page 2 without duplicates", async ({ page }) => {
+    const w = widget(page, "remote");
+    await openViaClick(w);
+    await expect(w.options).toHaveCount(20);
+
+    // Watch the loadingMore UI via MutationObserver BEFORE scrolling, so the
+    // assertion can't race the 400ms fake latency on a slow runner.
+    await w.root.evaluate((root) => {
+      const listbox = root.querySelector(".sl-listbox")!;
+      const loading = root.querySelector<HTMLElement>(".sl-loading")!;
+      const flags = { busy: false, skeleton: false, blanked: false };
+      (window as unknown as { __slMoreFlags: typeof flags }).__slMoreFlags = flags;
+      const check = () => {
+        if (listbox.getAttribute("aria-busy") === "true") flags.busy = true;
+        if (!loading.hidden) {
+          flags.skeleton = true;
+          // the skeleton must appear ALONGSIDE the options, not replace them
+          if (root.querySelectorAll(".sl-option").length === 0) flags.blanked = true;
+        }
+      };
+      new MutationObserver(check).observe(listbox, {
+        attributes: true,
+        subtree: true,
+        attributeFilter: ["aria-busy", "hidden"],
+      });
+      check();
+    });
+
+    await scrollListboxToBottom(w);
+    await expect(w.options).toHaveCount(40); // page 2 appended
+
+    const flags = await page.evaluate(
+      () =>
+        (window as unknown as {
+          __slMoreFlags: { busy: boolean; skeleton: boolean; blanked: boolean };
+        }).__slMoreFlags,
+    );
+    expect(flags.busy).toBe(true);
+    expect(flags.skeleton).toBe(true);
+    expect(flags.blanked).toBe(false);
+    await expect(w.loading).toBeHidden(); // skeleton gone after the append
+
+    // no duplicate values across the two pages
+    const values = await optionValues(w);
+    expect(values.length).toBe(40);
+    expect(new Set(values).size).toBe(40);
+  });
+
+  test("typing a query resets pagination to page 0; scrolling pages the filtered set", async ({ page }) => {
+    const w = widget(page, "remote");
+    await openViaClick(w);
+    await expect(w.options).toHaveCount(20);
+
+    await scrollListboxToBottom(w);
+    await expect(w.options).toHaveCount(40);
+
+    // new query → back to a fresh page 0 of the filtered result set
+    await w.searchInput.fill("üye");
+    await expect(w.options).toHaveCount(20); // 90 hits, first page only
+    await expect(w.options.first()).toHaveText("Üye 011");
+
+    // pagination still works within the filtered set
+    await scrollListboxToBottom(w);
+    await expect(w.options).toHaveCount(40);
+    const values = await optionValues(w);
+    expect(new Set(values).size).toBe(40);
   });
 });
