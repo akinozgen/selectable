@@ -21,6 +21,8 @@ export interface SelectableMessages {
   itemDeselected: (label: string, total: number) => string;
   resultsFound: (n: number) => string;
   maxReached: (max: number) => string;
+  createOption: (label: string) => string;
+  loadError: string;
 }
 
 export interface SearchConfig<T = unknown> {
@@ -45,9 +47,25 @@ export interface RenderConfig<T = unknown> {
   noResults?(query: string): Node | string;
 }
 
+/** Async data source contract (see data/async-source.ts for the factory). */
+export interface AsyncDataSource<T = unknown> {
+  readonly mode: "async";
+  load(ctx: { query: string; signal: AbortSignal }): Promise<SelectableOption<T>[]>;
+}
+
+export interface TagsConfig<T = unknown> {
+  /** Maps the free text to a new option; default `{ value: label, label }`. */
+  create?(label: string): SelectableOption<T>;
+}
+
 export interface SelectableOptions<T = unknown> {
-  /** Options data; omitted → read from the native <select> (domSource). */
-  source?: SelectableOption<T>[];
+  /**
+   * Options data; omitted → read from the native <select> (domSource).
+   * Pass an AsyncDataSource (e.g. `asyncSource(fetcher)`) for remote data.
+   */
+  source?: SelectableOption<T>[] | AsyncDataSource<T>;
+  /** Free-text tagging: lets the user create options from the search query. */
+  tags?: boolean | TagsConfig<T>;
   /** Omitted → derived from select[multiple]. */
   multiple?: boolean;
   disabled?: boolean;
@@ -74,6 +92,9 @@ export interface SelectableEventMap<T = unknown> {
   open: void;
   close: void;
   search: { query: string };
+  load: { query: string; count: number };
+  error: { error: unknown };
+  create: { option: SelectableOption<T> };
   clear: void;
   destroy: void;
 }

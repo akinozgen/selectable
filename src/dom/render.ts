@@ -21,6 +21,7 @@ export interface Refs {
   vlist: HTMLElement;
   empty: HTMLElement;
   loading: HTMLElement;
+  create: HTMLElement;
 }
 
 export interface BuildConfig {
@@ -122,12 +123,18 @@ export function buildSkeleton(
     loading.appendChild(skel);
   }
   loading.hidden = true;
-  listbox.append(vsizer, vlist, empty, loading);
+  const create = el("div", "sl-create", {
+    role: "option",
+    id: `${cfg.baseId}-create`,
+    "aria-selected": "false",
+  });
+  create.hidden = true;
+  listbox.append(vsizer, vlist, empty, loading, create);
   panel.appendChild(listbox);
 
   select.insertAdjacentElement("beforebegin", root);
   root.append(select, trigger, panel);
-  return { root, trigger, value, clear, sep, panel, search, searchInput, listbox, vsizer, vlist, empty, loading };
+  return { root, trigger, value, clear, sep, panel, search, searchInput, listbox, vsizer, vlist, empty, loading, create };
 }
 
 // ---------------------------------------------------------------------------
@@ -325,6 +332,23 @@ export class ListRenderer<T> {
     this.refs.loading.hidden = !loading;
     if (loading) this.refs.listbox.setAttribute("aria-busy", "true");
     else this.refs.listbox.removeAttribute("aria-busy");
+  }
+
+  /** Shows/hides the tagging "create" row; `active` = keyboard-highlighted. */
+  setCreate(label: string | null, active: boolean): void {
+    const node = this.refs.create;
+    if (label === null) {
+      node.hidden = true;
+      return;
+    }
+    node.hidden = false;
+    node.textContent = label;
+    if (active) node.setAttribute("data-active", "");
+    else node.removeAttribute("data-active");
+  }
+
+  get createId(): string {
+    return this.refs.create.id;
   }
 
   /** Scrolls the window so the given option index is visible. */

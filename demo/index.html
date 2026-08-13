@@ -109,6 +109,20 @@
           <option value="c">z-index savaşı yok</option>
         </select>
       </section>
+
+      <section>
+        <label for="tagged">Tagging — yaz ve oluştur</label>
+        <select id="tagged" name="etiketler" multiple>
+          <option value="oneri" selected>Öneri</option>
+          <option value="sikayet">Şikayet</option>
+        </select>
+      </section>
+
+      <section>
+        <label for="remote">Remote — async arama (sahte API, 400ms)</label>
+        <select id="remote" name="uye"></select>
+        <output id="remote-out"></output>
+      </section>
     </div>
 
     <div class="dark-zone">
@@ -137,7 +151,7 @@
     <script type="module">
       import "@/styles/tokens.css";
       import "@/styles/selectable.css";
-      import { Selectable, tr } from "@/index.ts";
+      import { Selectable, asyncSource, tr } from "@/index.ts";
 
       const basic = new Selectable("#basic", { i18n: tr, clearable: true });
       basic.on("change", ({ value, options }) => {
@@ -173,6 +187,29 @@
       new Selectable("#trapped", { i18n: tr });
       new Selectable("#dark", { i18n: tr, theme: "dark" });
       new Selectable("#formsel", { i18n: tr });
+
+      new Selectable("#tagged", { i18n: tr, tags: true });
+
+      const uyeler = ["Ahmet Yılmaz", "Ayşe Demir", "Mehmet Kaya", "Fatma Çelik",
+        "Mustafa Şahin", "Zeynep Arslan", "Ali Doğan", "Emine Koç",
+        "Hüseyin Aydın", "Hatice Özdemir"];
+      const remote = new Selectable("#remote", {
+        i18n: tr,
+        clearable: true,
+        source: asyncSource(async (q, { signal }) => {
+          await new Promise((r, j) => {
+            const t = setTimeout(r, 400);
+            signal.addEventListener("abort", () => { clearTimeout(t); j(new DOMException("Aborted", "AbortError")); });
+          });
+          return uyeler
+            .filter((u) => u.toLocaleLowerCase("tr").includes(q.toLocaleLowerCase("tr")))
+            .map((u, i) => ({ value: `u${i}`, label: u }));
+        }),
+      });
+      remote.on("change", ({ options }) => {
+        document.getElementById("remote-out").textContent =
+          options.map((o) => o.label).join(", ") || "—";
+      });
     </script>
   </body>
 </html>

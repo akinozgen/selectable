@@ -1,12 +1,15 @@
 import { createStore, createEmitter, type Store, type Emitter } from "./core/store";
 import type {
+  AsyncDataSource,
   SelectableEventMap,
   SelectableMessages,
   SelectableOption,
   SelectableOptions,
   SelectableState,
   SearchConfig,
+  TagsConfig,
 } from "./core/types";
+import { isDataSource } from "./data/async-source";
 import { resolveMessages } from "./core/i18n";
 import {
   readNativeOptions,
@@ -44,6 +47,9 @@ interface ResolvedConfig<T> {
   messages: SelectableMessages;
   virtualThreshold: number;
   overscan: number;
+  tags: TagsConfig<T> | null;
+  asyncSource: AsyncDataSource<T> | null;
+  debounceMs: number;
 }
 
 const instances = new WeakMap<HTMLSelectElement, Selectable>();
@@ -70,6 +76,9 @@ export class Selectable<T = unknown> {
   private unhideNative: () => void;
   private prev: SelectableState<T>;
   private destroyed = false;
+  private muteObserver = false;
+  private queryTimer: ReturnType<typeof setTimeout> | null = null;
+  private loadAbort: AbortController | null = null;
 
   constructor(
     target: HTMLSelectElement | string,
@@ -92,13 +101,19 @@ export class Selectable<T = unknown> {
     this.select = select;
     this.opts = options;
 
-    const sourceOptions = options.source ?? readNativeOptions<T>(select);
+    const async = isDataSource(options.source) ? options.source : null;
+    const sourceOptions = async
+      ? readNativeOptions<T>(select) // preselected values live in the DOM
+      : ((options.source as SelectableOption<T>[] | undefined) ??
+        readNativeOptions<T>(select));
     const messages = resolveMessages(options.i18n);
     const multiple = options.multiple ?? select.multiple;
     const realOptions = sourceOptions.filter((o) => o.value !== "");
     const searchable =
       options.search === undefined
-        ? realOptions.length > SEARCH_AUTO_THRESHOLD
+        ? async !== null ||
+          options.tags !== undefined ||
+          realOptions.length > SEARCH_AUTO_THRESHOLD
         : options.search !== false;
 
     this.cfg = {
@@ -122,13 +137,25 @@ export class Selectable<T = unknown> {
         options.virtual === false ? Infinity : typeof options.virtual === "object" ? 0 : 100,
       overscan:
         typeof options.virtual === "object" ? (options.virtual.overscan ?? 6) : 6,
+      tags:
+        options.tags === undefined || options.tags === false
+          ? null
+          : options.tags === true
+            ? {}
+            : options.tags,
+      asyncSource: async,
+      debounceMs:
+        typeof options.search === "object"
+          ? (options.search.debounceMs ?? 250)
+          : 250,
     };
 
-    const selected = options.source
-      ? readNativeSelected(select).filter((v) =>
-          realOptions.some((o) => o.value === v),
-        )
-      : readNativeSelected(select);
+    const selected =
+      options.source && !async
+        ? readNativeSelected(select).filter((v) =>
+            realOptions.some((o) => o.value === v),
+          )
+        : readNativeSelected(select);
 
     this.store = createStore<SelectableState<T>>({
       options: realOptions,
@@ -177,7 +204,9 @@ export class Selectable<T = unknown> {
     this.live = new LiveRegion();
     this.refs.root.appendChild(this.live.node);
 
-    this.stopObserver = observeNativeSelect(select, () => this.refresh());
+    this.stopObserver = observeNativeSelect(select, () => {
+      if (!this.muteObserver && !this.cfg.asyncSource) this.refresh();
+    });
     this.stopFormReset = onFormReset(select, () => this.syncFromNative());
 
     this.store.subscribe(() => this.onStateChange());
@@ -242,6 +271,7 @@ export class Selectable<T = unknown> {
     });
     this.panel.open();
     this.list.ensureVisible(this.store.getState().activeIndex);
+    if (this.cfg.asyncSource) this.runLoad("");
     if (this.cfg.searchable && this.refs.searchInput) {
       this.refs.searchInput.value = "";
       // No autofocus on coarse pointers: the virtual keyboard must not pop.
@@ -318,6 +348,8 @@ export class Selectable<T = unknown> {
     if (this.destroyed) return;
     this.destroyed = true;
     this.close({ focusTrigger: false });
+    if (this.queryTimer) clearTimeout(this.queryTimer);
+    this.loadAbort?.abort();
     this.abort.abort();
     this.stopObserver();
     this.stopFormReset();
@@ -351,6 +383,8 @@ export class Selectable<T = unknown> {
     query: string,
     options = this.store.getState().options,
   ): SelectableOption<T>[] {
+    // Async mode: the server does the filtering.
+    if (this.cfg.asyncSource) return options;
     const q = query.trim();
     if (q.length < this.cfg.search.minQueryLength || q === "") return options;
     const filter = this.cfg.search.filter ?? defaultFilter;
@@ -367,6 +401,13 @@ export class Selectable<T = unknown> {
   }
 
   private applyQuery(query: string): void {
+    if (this.cfg.asyncSource) {
+      this.store.setState({ query });
+      this.emitter.emit("search", { query });
+      if (this.queryTimer) clearTimeout(this.queryTimer);
+      this.queryTimer = setTimeout(() => this.runLoad(query), this.cfg.debounceMs);
+      return;
+    }
     const filtered = this.computeFiltered(query);
     const activeIndex = filtered.findIndex((o) => !o.disabled);
     this.store.setState({ query, filtered, activeIndex });
@@ -376,9 +417,39 @@ export class Selectable<T = unknown> {
     }
   }
 
+  /** Async load with abort-on-newer-query; keeps stale results while loading. */
+  private async runLoad(query: string): Promise<void> {
+    const source = this.cfg.asyncSource;
+    if (!source) return;
+    this.loadAbort?.abort();
+    const abort = (this.loadAbort = new AbortController());
+    this.store.setState({ loading: true });
+    try {
+      const options = await source.load({ query, signal: abort.signal });
+      if (abort.signal.aborted || this.destroyed) return;
+      this.setOptions(options);
+      const s = this.store.getState();
+      this.store.setState({
+        loading: false,
+        activeIndex: s.filtered.findIndex((o) => !o.disabled),
+      });
+      this.emitter.emit("load", { query, count: options.length });
+      if (this.isOpen) {
+        this.live.announce(this.cfg.messages.resultsFound(options.length));
+      }
+    } catch (error) {
+      if (abort.signal.aborted || this.destroyed) return;
+      this.store.setState({ loading: false });
+      this.emitter.emit("error", { error });
+      this.live.announce(this.cfg.messages.loadError);
+    }
+  }
+
   private applySelection(next: string[], opts: { silent: boolean }): void {
     const s = this.store.getState();
     if (arraysEqual(s.selected, next)) return;
+    // Async/tag values may not exist as <option> yet; the form needs them.
+    for (const v of next) this.ensureNativeOption(optionFor(s, v));
     this.store.setState({ selected: next });
     writeNativeSelection(this.select, next, { silent: opts.silent });
     if (!opts.silent) {
@@ -415,8 +486,62 @@ export class Selectable<T = unknown> {
     if (this.cfg.closeOnSelect) this.close();
   }
 
+  /** Tagging: the label for the "create" row, or null when hidden. */
+  private createLabel(): string | null {
+    if (!this.cfg.tags) return null;
+    const s = this.store.getState();
+    const label = s.query.trim();
+    if (label === "") return null;
+    const exists = s.options.some(
+      (o) => o.label.toLocaleLowerCase() === label.toLocaleLowerCase(),
+    );
+    return exists ? null : label;
+  }
+
+  /** Index of the virtual create row (= filtered.length when visible). */
+  private createIndex(): number {
+    return this.createLabel() !== null
+      ? this.store.getState().filtered.length
+      : -1;
+  }
+
+  private doCreate(): void {
+    const label = this.createLabel();
+    if (label === null) return;
+    const option: SelectableOption<T> =
+      this.cfg.tags?.create?.(label) ?? { value: label, label };
+    this.ensureNativeOption(option);
+    this.setOptions([...this.store.getState().options, option]);
+    this.toggleValue(option.value);
+    this.emitter.emit("create", { option });
+    if (this.refs.searchInput) {
+      this.refs.searchInput.value = "";
+      this.applyQuery("");
+    }
+  }
+
+  /** Created/async-selected values need a real <option> for form submission. */
+  private ensureNativeOption(option: SelectableOption<T>): void {
+    if (
+      Array.from(this.select.options).some((o) => o.value === option.value)
+    ) {
+      return;
+    }
+    this.muteObserver = true;
+    const node = document.createElement("option");
+    node.value = option.value;
+    node.textContent = option.label;
+    node.setAttribute("data-sl-created", "");
+    this.select.appendChild(node);
+    queueMicrotask(() => (this.muteObserver = false));
+  }
+
   private selectActive(): boolean {
     const s = this.store.getState();
+    if (s.activeIndex === this.createIndex() && s.activeIndex >= 0) {
+      this.doCreate();
+      return true;
+    }
     const option = s.filtered[s.activeIndex];
     if (!option || option.disabled) return false;
     this.toggleValue(option.value);
@@ -426,13 +551,14 @@ export class Selectable<T = unknown> {
   private moveActive(delta: number): void {
     const s = this.store.getState();
     if (!s.open) return;
-    const n = s.filtered.length;
+    // The create row is a navigable virtual row at the end of the list.
+    const n = s.filtered.length + (this.createLabel() !== null ? 1 : 0);
     if (n === 0) return;
     let i = s.activeIndex < 0 ? (delta > 0 ? -1 : n) : s.activeIndex;
     for (let steps = 0; steps < n; steps++) {
       i += delta > 0 ? 1 : -1;
       if (i < 0 || i >= n) return; // edges stop, no wrap (APG)
-      if (!s.filtered[i]!.disabled) {
+      if (i === s.filtered.length || !s.filtered[i]!.disabled) {
         this.store.setState({ activeIndex: i });
         return;
       }
@@ -500,8 +626,23 @@ export class Selectable<T = unknown> {
         this.list.setMarkers(s.selected, s.activeIndex);
       }
       if (s.loading !== p.loading) this.list.setLoading(s.loading);
+
+      const createLabel = this.createLabel();
+      const onCreate = createLabel !== null && s.activeIndex === s.filtered.length;
+      this.list.setCreate(
+        createLabel !== null ? this.cfg.messages.createOption(createLabel) : null,
+        onCreate,
+      );
+      if (createLabel !== null) this.refs.empty.hidden = true;
+
       const active = s.filtered[s.activeIndex];
-      this.setActiveDescendant(active ? this.list.optionId(s.activeIndex) : null);
+      this.setActiveDescendant(
+        onCreate
+          ? this.list.createId
+          : active
+            ? this.list.optionId(s.activeIndex)
+            : null,
+      );
     }
   }
 
@@ -550,7 +691,12 @@ export class Selectable<T = unknown> {
     listbox.addEventListener(
       "click",
       (e) => {
-        const node = (e.target as HTMLElement).closest<HTMLElement>(".sl-option");
+        const target = e.target as HTMLElement;
+        if (target.closest(".sl-create")) {
+          this.doCreate();
+          return;
+        }
+        const node = target.closest<HTMLElement>(".sl-option");
         if (!node || node.hasAttribute("aria-disabled")) return;
         const idx = Number(node.dataset.index);
         this.store.setState({ activeIndex: idx });
@@ -561,10 +707,15 @@ export class Selectable<T = unknown> {
     listbox.addEventListener(
       "pointermove",
       (e) => {
-        const node = (e.target as HTMLElement).closest<HTMLElement>(".sl-option");
-        if (!node || node.hasAttribute("aria-disabled")) return;
-        const idx = Number(node.dataset.index);
-        if (idx !== this.store.getState().activeIndex) {
+        const target = e.target as HTMLElement;
+        const idx = target.closest(".sl-create")
+          ? this.createIndex()
+          : (() => {
+              const node = target.closest<HTMLElement>(".sl-option");
+              if (!node || node.hasAttribute("aria-disabled")) return -1;
+              return Number(node.dataset.index);
+            })();
+        if (idx >= 0 && idx !== this.store.getState().activeIndex) {
           this.store.setState({ activeIndex: idx });
         }
       },

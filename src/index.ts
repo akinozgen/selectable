@@ -5,6 +5,7 @@
 
 export { Selectable } from "./selectable";
 export { defaultMessages, tr } from "./core/i18n";
+export { asyncSource } from "./data/async-source";
 export type {
   SelectableOption,
   SelectableOptions,
@@ -13,6 +14,8 @@ export type {
   SearchConfig,
   PositioningConfig,
   RenderConfig,
+  TagsConfig,
+  AsyncDataSource,
 } from "./core/types";
 export { computePosition } from "./positioning/compute";
 export { autoUpdate } from "./positioning/auto-update";

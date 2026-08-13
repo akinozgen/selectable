@@ -12,6 +12,8 @@ export const defaultMessages: SelectableMessages = {
   itemDeselected: (label, total) => `${label} removed, ${total} in total`,
   resultsFound: (n) => (n === 0 ? "No results found" : `${n} results available`),
   maxReached: (max) => `Maximum ${max} selections`,
+  createOption: (label) => `Create "${label}"`,
+  loadError: "Failed to load results",
 };
 
 /** Turkish message pack (tree-shaken away if unused). */
@@ -26,6 +28,8 @@ export const tr: SelectableMessages = {
   itemDeselected: (label, total) => `${label} kaldırıldı, toplam ${total}`,
   resultsFound: (n) => (n === 0 ? "Sonuç bulunamadı" : `${n} sonuç bulundu`),
   maxReached: (max) => `En fazla ${max} seçim yapılabilir`,
+  createOption: (label) => `"${label}" oluştur`,
+  loadError: "Sonuçlar yüklenemedi",
 };
 
 export function resolveMessages(

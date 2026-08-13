@@ -247,3 +247,108 @@ describe("Selectable — upgrade()", () => {
     expect(document.querySelectorAll(".sl").length).toBe(1);
   });
 });
+
+describe("Selectable — tagging", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("shows a create row for unknown queries and creates on Enter", () => {
+    const select = makeSelect(TAGS);
+    const inst = new Selectable(select, { tags: true });
+    const created = vi.fn();
+    inst.on("create", created);
+
+    document.querySelector<HTMLElement>(".sl-trigger")!.click();
+    const input = document.querySelector<HTMLInputElement>(".sl-search-input")!;
+    input.value = "elixir";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const createRow = document.querySelector<HTMLElement>(".sl-create")!;
+    expect(createRow.hidden).toBe(false);
+    expect(createRow.textContent).toContain("elixir");
+
+    // ArrowDown'larla create satırına in (3 seçenek + create)
+    for (let i = 0; i < 5; i++) {
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true }));
+    }
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+
+    expect(inst.value).toContain("elixir");
+    expect(created).toHaveBeenCalledWith({
+      option: expect.objectContaining({ value: "elixir", label: "elixir" }),
+    });
+    // native select'e form için option eklendi
+    const native = Array.from(select.options).find((o) => o.value === "elixir");
+    expect(native).toBeTruthy();
+    expect(native!.selected).toBe(true);
+    expect(native!.hasAttribute("data-sl-created")).toBe(true);
+  });
+
+  it("hides the create row when the query matches an existing label", () => {
+    const select = makeSelect(TAGS);
+    new Selectable(select, { tags: true });
+    document.querySelector<HTMLElement>(".sl-trigger")!.click();
+    const input = document.querySelector<HTMLInputElement>(".sl-search-input")!;
+    input.value = "CSS";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(document.querySelector<HTMLElement>(".sl-create")!.hidden).toBe(true);
+  });
+});
+
+describe("Selectable — async source", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  const CITIES = [
+    { value: "34", label: "İstanbul" },
+    { value: "06", label: "Ankara" },
+    { value: "35", label: "İzmir" },
+  ];
+
+  it("loads on open, filters on the server, syncs selection to native", async () => {
+    document.body.innerHTML = `<form id="f"><select name="city"></select></form>`;
+    const select = document.querySelector("select")!;
+    const fetcher = vi.fn(async (q: string) =>
+      CITIES.filter((c) => c.label.toLocaleLowerCase().includes(q.toLocaleLowerCase())),
+    );
+    const { asyncSource } = await import("../../src/data/async-source");
+    const inst = new Selectable(select, {
+      source: asyncSource(fetcher, { cacheSize: 0 }),
+      search: { debounceMs: 0 },
+    });
+    inst.open();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(fetcher).toHaveBeenCalledWith("", expect.anything());
+    expect(options().length).toBe(3);
+
+    const input = document.querySelector<HTMLInputElement>(".sl-search-input")!;
+    input.value = "ank";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(options().length).toBe(1);
+    expect(options()[0]!.textContent).toContain("Ankara");
+
+    options()[0]!.click();
+    expect(inst.value).toEqual(["06"]);
+    // async seçim native option olarak forma yazıldı
+    expect(select.value).toBe("06");
+  });
+
+  it("emits error and announces on failed loads", async () => {
+    document.body.innerHTML = `<select id="s"></select>`;
+    const { asyncSource } = await import("../../src/data/async-source");
+    const inst = new Selectable("#s", {
+      source: asyncSource(async () => {
+        throw new Error("boom");
+      }),
+      search: { debounceMs: 0 },
+    });
+    const onError = vi.fn();
+    inst.on("error", onError);
+    inst.open();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(onError).toHaveBeenCalled();
+  });
+});
