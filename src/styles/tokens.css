@@ -1,0 +1,207 @@
+/* ============================================================
+   Selectable — Design Tokens v0.1
+   Kapsam: .sl (inline kök) ve .sl-portal (body-level panel kökü).
+   :root'a global sızıntı YOK. @layer YOK (KARARLAR K1/K2).
+   ============================================================ */
+
+.sl,
+.sl-portal {
+  /* ---------- RENK — Açık tema (varsayılan) ---------- */
+  --sl-bg:              #ffffff;   /* kontrol zemini */
+  --sl-fg:              #1c2024;   /* birincil metin (saf siyah değil) */
+  --sl-muted:           #f2f3f5;   /* hover zemini, chip zemini, disabled bg */
+  --sl-muted-fg:        #667085;   /* placeholder, ikincil metin */
+  --sl-border:          #d5d9e0;   /* istirahat hali kenarlık */
+  --sl-border-hover:    #b6bcc8;
+  --sl-accent:          #3d63dd;   /* TEK marka girişi — host bunu ezer */
+  --sl-accent-fg:       #ffffff;
+  --sl-danger:          #d93843;
+  --sl-panel-bg:        #ffffff;
+  --sl-panel-border:    #e4e7ec;
+
+  /* ---------- TÜRETİLMİŞ RENKLER (fallback + color-mix) ---------- */
+  --sl-accent-weak:     #ecf0fd;                                        /* fallback */
+  --sl-accent-weak:     color-mix(in oklab, var(--sl-accent) 9%,  var(--sl-bg));
+  --sl-ring:            rgba(61, 99, 221, 0.22);                        /* fallback */
+  --sl-ring:            color-mix(in oklab, var(--sl-accent) 22%, transparent);
+  --sl-ring-danger:     color-mix(in oklab, var(--sl-danger) 22%, transparent);
+  --sl-hairline:        color-mix(in oklab, var(--sl-fg) 8%,  transparent); /* iç ayraçlar */
+  --sl-scrollbar-thumb: color-mix(in oklab, var(--sl-fg) 18%, transparent);
+
+  /* ---------- BOŞLUK (4px grid, rem) ---------- */
+  --sl-space-1: 0.25rem;   /*  4px */
+  --sl-space-2: 0.5rem;    /*  8px */
+  --sl-space-3: 0.75rem;   /* 12px */
+  --sl-space-4: 1rem;      /* 16px */
+  --sl-space-5: 1.25rem;   /* 20px */
+  --sl-space-6: 1.5rem;    /* 24px */
+  --sl-space-8: 2rem;      /* 32px */
+
+  /* ---------- KÖŞE YARIÇAPI ---------- */
+  --sl-radius-xs:     0.25rem;    /*  4px — skeleton, küçük parçalar */
+  --sl-radius-sm:     0.375rem;   /*  6px — option, chip */
+  --sl-radius-md:     0.5rem;     /*  8px — kontrol (md) */
+  --sl-radius-panel:  0.625rem;   /* 10px — panel (iç içe yarıçap kuralı) */
+  --sl-radius-full:   999px;
+
+  /* ---------- TİPOGRAFİ (font ailesi HOST'tan miras) ---------- */
+  --sl-font-size-sm:      0.8125rem;  /* 13px */
+  --sl-font-size-md:      0.875rem;   /* 14px */
+  --sl-font-size-lg:      1rem;       /* 16px */
+  --sl-font-size-caption: 0.75rem;    /* 12px — grup başlığı, +N chip */
+  --sl-line-height:       1.4;
+  --sl-font-weight:       400;
+  --sl-font-weight-medium:500;
+
+  /* ---------- GÖLGE (katmanlı, düşük alfa) ---------- */
+  --sl-shadow-xs:
+      0 1px 2px rgba(16, 18, 23, 0.06);
+  --sl-shadow-sm:
+      0 1px 2px rgba(16, 18, 23, 0.05),
+      0 2px 6px rgba(16, 18, 23, 0.04);
+  --sl-shadow-panel:
+      0 0 0 1px  rgba(16, 18, 23, 0.04),
+      0 4px 10px -2px  rgba(16, 18, 23, 0.08),
+      0 16px 32px -8px rgba(16, 18, 23, 0.10);
+
+  /* ---------- HAREKET ---------- */
+  --sl-dur-1: 100ms;   /* çıkış, mikro geri bildirim */
+  --sl-dur-2: 160ms;   /* giriş, panel açılışı */
+  --sl-dur-3: 220ms;   /* chevron, tema geçişi */
+  --sl-ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+  --sl-ease-in:    cubic-bezier(0.4, 0, 1, 1);
+  --sl-ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ---------- KATMAN ---------- */
+  --sl-z-panel: 9999;
+
+  /* ---------- BOYUT (md varsayılan) ---------- */
+  --sl-control-h:   2.25rem;    /* 36px */
+  --sl-pad-x:       0.75rem;    /* 12px */
+  --sl-font-size:   var(--sl-font-size-md);
+  --sl-radius:      var(--sl-radius-md);
+  --sl-icon-size:   1rem;       /* 16px */
+  --sl-chip-h:      1.5rem;     /* 24px */
+  --sl-chip-radius: var(--sl-radius-sm);
+
+  /* ---------- PANEL / YOĞUNLUK (normal varsayılan) ---------- */
+  --sl-panel-pad:      0.25rem;   /*  4px */
+  --sl-panel-offset:   0.375rem;  /*  6px — trigger↔panel boşluğu */
+  --sl-panel-max-h:    18rem;     /* 288px (JS viewport'a göre kısar) */
+  --sl-option-h:       2rem;      /* 32px */
+  --sl-option-pad-x:   0.5rem;    /*  8px (panel-pad 4 + 8 = 12 → trigger metniyle hizalı) */
+}
+
+/* ============================================================
+   KOYU TEMA — elle geçersiz kılma: data-sl-theme her şeyi belirler
+   ============================================================ */
+
+[data-sl-theme="dark"] .sl,
+.sl[data-sl-theme="dark"],
+.sl-portal[data-sl-theme="dark"] {
+  --sl-bg:              #191b1f;   /* saf siyah değil */
+  --sl-fg:              #e6e8eb;
+  --sl-muted:           #26292f;
+  --sl-muted-fg:        #9aa2b1;
+  --sl-border:          #3a3f47;
+  --sl-border-hover:    #4d535d;
+  --sl-accent:          #7d97f2;   /* koyuda 1-2 kademe açık accent */
+  --sl-accent-fg:       #10131a;
+  --sl-danger:          #f0656e;
+  --sl-panel-bg:        #212429;   /* zeminden 1 kademe açık = yükseklik hissi */
+  --sl-panel-border:    #3a3f47;
+
+  --sl-accent-weak:     color-mix(in oklab, var(--sl-accent) 14%, var(--sl-panel-bg));
+  --sl-ring:            color-mix(in oklab, var(--sl-accent) 32%, transparent);
+  --sl-ring-danger:     color-mix(in oklab, var(--sl-danger) 32%, transparent);
+  --sl-hairline:        color-mix(in oklab, var(--sl-fg) 10%, transparent);
+  --sl-scrollbar-thumb: color-mix(in oklab, var(--sl-fg) 22%, transparent);
+
+  /* Koyuda gölge zayıflar, kenarlık görünürlüğü devralır */
+  --sl-shadow-panel:
+      0 0 0 1px  rgba(0, 0, 0, 0.4),
+      0 8px 24px -6px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================================
+   OTOMATİK KOYU — yalnızca "auto" modda (self attribute yoksa).
+   Build adımı olmadığından yukarıdaki koyu blokla ELLE eş tutulur;
+   değer değişikliği İKİ bloğa da işlenmek zorundadır.
+   ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+  .sl:not([data-sl-theme="light"]):not([data-sl-theme="dark"]),
+  .sl-portal:not([data-sl-theme="light"]):not([data-sl-theme="dark"]) {
+    --sl-bg:              #191b1f;
+    --sl-fg:              #e6e8eb;
+    --sl-muted:           #26292f;
+    --sl-muted-fg:        #9aa2b1;
+    --sl-border:          #3a3f47;
+    --sl-border-hover:    #4d535d;
+    --sl-accent:          #7d97f2;
+    --sl-accent-fg:       #10131a;
+    --sl-danger:          #f0656e;
+    --sl-panel-bg:        #212429;
+    --sl-panel-border:    #3a3f47;
+
+    --sl-accent-weak:     color-mix(in oklab, var(--sl-accent) 14%, var(--sl-panel-bg));
+    --sl-ring:            color-mix(in oklab, var(--sl-accent) 32%, transparent);
+    --sl-ring-danger:     color-mix(in oklab, var(--sl-danger) 32%, transparent);
+    --sl-hairline:        color-mix(in oklab, var(--sl-fg) 10%, transparent);
+    --sl-scrollbar-thumb: color-mix(in oklab, var(--sl-fg) 22%, transparent);
+
+    --sl-shadow-panel:
+        0 0 0 1px  rgba(0, 0, 0, 0.4),
+        0 8px 24px -6px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ============================================================
+   BOYUT VARYANTLARI — yalnızca token override, bileşen kuralı yok
+   ============================================================ */
+
+.sl[data-size="sm"],
+.sl-portal[data-size="sm"] {
+  --sl-control-h:   2rem;        /* 32px */
+  --sl-pad-x:       0.625rem;    /* 10px */
+  --sl-font-size:   var(--sl-font-size-sm);
+  --sl-radius:      var(--sl-radius-sm);
+  --sl-icon-size:   0.875rem;    /* 14px */
+  --sl-chip-h:      1.375rem;    /* 22px */
+  --sl-chip-radius: 0.25rem;     /*  4px */
+  --sl-option-h:    1.75rem;     /* 28px (normal yoğunluk) */
+}
+
+.sl[data-size="lg"],
+.sl-portal[data-size="lg"] {
+  --sl-control-h:   2.75rem;     /* 44px — WCAG dokunma hedefi */
+  --sl-pad-x:       0.875rem;    /* 14px */
+  --sl-font-size:   var(--sl-font-size-lg);
+  --sl-radius:      0.625rem;    /* 10px */
+  --sl-icon-size:   1.125rem;    /* 18px */
+  --sl-chip-h:      1.75rem;     /* 28px */
+  --sl-chip-radius: 0.5rem;      /*  8px */
+  --sl-option-h:    2.25rem;     /* 36px (normal yoğunluk) */
+}
+
+/* ============================================================
+   YOĞUNLUK — boyuttan bağımsız ikinci eksen, yalnızca token
+   ============================================================ */
+
+.sl[data-density="compact"],
+.sl-portal[data-density="compact"] {
+  --sl-option-h: 1.75rem;   /* 28px */
+}
+
+.sl[data-density="comfortable"],
+.sl-portal[data-density="comfortable"] {
+  --sl-option-h: 2.5rem;    /* 40px */
+}
+
+/* Kaba işaretçide (dokunmatik) yoğunluk belirtilmemişse comfortable */
+@media (pointer: coarse) {
+  .sl:not([data-density]),
+  .sl-portal:not([data-density]) {
+    --sl-option-h: 2.5rem;
+  }
+}

@@ -1,0 +1,647 @@
+/* ============================================================
+   Selectable — Bileşen Stilleri v0.1
+   Sözleşme: docs/ANATOMI.md · Spec: docs/research/02-tasarim-spec.md
+   Kural: @layer YOK; tek/çift seviye seçici, özgüllük (0,1,0)–(0,2,0);
+   durumlar attribute ile; mantıksal özellikler (RTL güvenli).
+   ============================================================ */
+
+/* ---------- SCOPED MINI-RESET ---------- */
+
+:where(.sl, .sl *, .sl-portal, .sl-portal *) {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  text-transform: none;
+  letter-spacing: normal;
+  text-shadow: none;
+  text-indent: 0;
+  list-style: none;
+}
+
+.sl,
+.sl-portal {
+  /* Kalıtım zinciri burada kesilir ve yeniden kurulur */
+  font-family: inherit;              /* host'tan alınan TEK tipografik şey */
+  font-size: var(--sl-font-size);
+  font-weight: var(--sl-font-weight);
+  line-height: var(--sl-line-height);
+  color: var(--sl-fg);
+  direction: inherit;
+  position: relative;
+}
+
+.sl :is(button, input),
+.sl-portal :is(button, input) {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+.sl svg,
+.sl-portal svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* ---------- GİZLİ NATIVE SELECT / OFFSCREEN ---------- */
+
+.sl-native {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sl-offscreen {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* JS'in gizlediği parçalar display tanımlarımızı ezebilsin */
+.sl-panel[hidden],
+.sl-clear[hidden],
+.sl-sep[hidden],
+.sl-search[hidden],
+.sl-empty[hidden],
+.sl-loading[hidden],
+.sl-create[hidden] {
+  display: none;
+}
+
+/* ---------- TRIGGER ---------- */
+
+.sl-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-space-1);
+  min-block-size: var(--sl-control-h);
+  padding-block: 0;
+  padding-inline: var(--sl-pad-x);
+  background-color: var(--sl-bg);
+  border: 1px solid var(--sl-border);
+  border-radius: var(--sl-radius);
+  box-shadow: var(--sl-shadow-xs);
+  color: var(--sl-fg);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color 120ms var(--sl-ease-out),
+    background-color 120ms var(--sl-ease-out),
+    box-shadow 120ms var(--sl-ease-out),
+    color 120ms var(--sl-ease-out);
+}
+
+.sl-trigger:hover {
+  border-color: var(--sl-border-hover);
+}
+
+/* Form kontrolü geleneği: halka HER odakta (fare dahil) görünür */
+.sl-trigger:focus,
+.sl-trigger[data-state="open"] {
+  border-color: var(--sl-accent);
+  box-shadow: var(--sl-shadow-xs), 0 0 0 3px var(--sl-ring);
+  outline: 2px solid transparent; /* forced-colors bunu sistem rengiyle boyar */
+  outline-offset: 2px;
+}
+
+.sl-trigger[aria-invalid="true"] {
+  border-color: var(--sl-danger);
+  --sl-ring: var(--sl-ring-danger);
+}
+
+.sl-trigger[aria-readonly="true"] {
+  border-color: var(--sl-border);
+  cursor: default;
+  --sl-ring: color-mix(in oklab, var(--sl-fg) 12%, transparent); /* nötr halka */
+}
+
+[aria-readonly="true"] .sl-chevron {
+  display: none;
+}
+
+[data-disabled] .sl-trigger {
+  background-color: var(--sl-muted);
+  border-color: var(--sl-border);
+  box-shadow: var(--sl-shadow-xs);
+  color: var(--sl-muted-fg);
+  cursor: not-allowed;
+}
+
+/* Chip'li (çoklu) trigger: chip'ler 1px kenarlık hesaba katılarak ortalanır */
+[data-multiple] .sl-trigger {
+  padding-block: calc((var(--sl-control-h) - var(--sl-chip-h) - 2px) / 2);
+}
+
+/* ---------- DEĞER / PLACEHOLDER ---------- */
+
+.sl-value {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-multiple] .sl-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sl-space-1);
+  white-space: normal;
+  text-overflow: clip;
+}
+
+/* Counter modu: tek satır, taşan chip'ler JS ile +N'e katlanır */
+[data-overflow="counter"] .sl-value {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+[data-overflow="counter"] .sl-chip {
+  flex: none;
+}
+
+.sl-placeholder {
+  color: var(--sl-muted-fg);
+}
+
+/* ---------- CHIP ---------- */
+
+.sl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sl-space-1);
+  block-size: var(--sl-chip-h);
+  max-inline-size: 12rem;
+  min-inline-size: 0;
+  padding-block: 0;
+  padding-inline: var(--sl-space-2) var(--sl-space-1);
+  background-color: var(--sl-muted);
+  border-radius: var(--sl-chip-radius);
+  color: var(--sl-fg);
+  font-size: var(--sl-font-size-sm);
+  transition: opacity var(--sl-dur-1) var(--sl-ease-in);
+}
+
+.sl-chip-label {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sl-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+  border-radius: 0.25rem;
+  color: var(--sl-muted-fg);
+  font-size: 0.75rem;   /* 12px × glifi */
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 120ms var(--sl-ease-out),
+    color 120ms var(--sl-ease-out);
+}
+
+.sl-chip-remove:hover {
+  background-color: var(--sl-hairline); /* nötr; kırmızı YOK */
+  color: var(--sl-fg);
+}
+
+.sl-chip-remove:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 3px var(--sl-ring);
+}
+
+/* +N sayaç chip'i */
+.sl-chip-counter {
+  padding-inline: var(--sl-space-2);
+  color: var(--sl-muted-fg);
+  font-size: var(--sl-font-size-caption);
+}
+
+/* ---------- TEMİZLE / AYRAÇ / CHEVRON / SPINNER ---------- */
+
+.sl-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  inline-size: 1.5rem;   /* 24×24 dokunma hedefi, görsel ikon 16 */
+  block-size: 1.5rem;
+  border-radius: 0.25rem;
+  color: var(--sl-muted-fg);
+  font-size: var(--sl-icon-size);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 120ms var(--sl-ease-out),
+    color 120ms var(--sl-ease-out);
+}
+
+.sl-clear:hover {
+  background-color: var(--sl-muted);
+  color: var(--sl-fg);
+}
+
+.sl-clear:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 3px var(--sl-ring);
+}
+
+.sl-sep {
+  flex: none;
+  inline-size: 1px;
+  block-size: calc(var(--sl-control-h) * 0.6);
+  background-color: var(--sl-hairline);
+}
+
+.sl-chevron {
+  display: inline-flex;
+  flex: none;
+  color: var(--sl-muted-fg);
+  transition: transform var(--sl-dur-3) var(--sl-ease-inout);
+}
+
+.sl-chevron svg {
+  inline-size: var(--sl-icon-size);
+  block-size: var(--sl-icon-size);
+}
+
+[data-state="open"] .sl-chevron {
+  transform: rotate(180deg);
+}
+
+.sl-spinner {
+  display: none;
+  flex: none;
+  color: var(--sl-muted-fg);
+}
+
+[data-loading] .sl-chevron {
+  display: none;
+}
+
+[data-loading] .sl-spinner {
+  display: inline-flex;
+}
+
+.sl-spinner svg {
+  inline-size: var(--sl-icon-size);
+  block-size: var(--sl-icon-size);
+  animation: sl-spin 800ms linear infinite;
+}
+
+/* ---------- PANEL ---------- */
+
+.sl-panel {
+  /* popover UA reset: margin:auto + inset:0 sıfırlanır, konumu JS yazar */
+  margin: 0;
+  inset: auto;
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-inline-size: var(--sl-anchor-w, auto);
+  max-block-size: min(var(--sl-panel-max-h), calc(100dvh - var(--sl-anchor-gap, 2rem)));
+  padding: var(--sl-panel-pad);
+  background-color: var(--sl-panel-bg);
+  border: 1px solid var(--sl-panel-border);
+  border-radius: var(--sl-radius-panel);
+  box-shadow: var(--sl-shadow-panel);
+  color: var(--sl-fg);
+  z-index: var(--sl-z-panel);
+  --sl-panel-shift: -0.25rem;
+  transform-origin: center top;
+}
+
+.sl-panel[data-placement="top"] {
+  --sl-panel-shift: 0.25rem;
+  transform-origin: center bottom;
+}
+
+/* ---------- ARAMA ---------- */
+
+.sl-search {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-space-2);
+  flex: none;
+  block-size: 2.25rem;   /* 36px */
+  margin-block-start: calc(-1 * var(--sl-panel-pad));
+  margin-inline: calc(-1 * var(--sl-panel-pad));
+  margin-block-end: var(--sl-panel-pad);
+  padding-inline: var(--sl-space-3);   /* ikon 12px hattına oturur */
+  border-block-end: 1px solid var(--sl-hairline);
+}
+
+.sl-search-icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--sl-muted-fg);
+}
+
+.sl-search-icon svg {
+  inline-size: var(--sl-icon-size);
+  block-size: var(--sl-icon-size);
+}
+
+.sl-search-input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  block-size: 100%;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--sl-fg);
+  font-size: var(--sl-font-size);
+}
+
+/* İçeride ikinci halka yok; transparent outline'ı forced-colors boyar */
+.sl-search-input:focus {
+  outline: 2px solid transparent;
+}
+
+.sl-search-input::placeholder {
+  color: var(--sl-muted-fg);
+  opacity: 1;
+}
+
+/* ---------- LISTBOX + SCROLLBAR ---------- */
+
+.sl-listbox {
+  position: relative;   /* sanal liste referansı */
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sl-scrollbar-thumb) transparent;
+}
+
+.sl-listbox::-webkit-scrollbar {
+  width: 10px;
+}
+
+.sl-listbox::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sl-listbox::-webkit-scrollbar-thumb {
+  background: var(--sl-scrollbar-thumb);
+  background-clip: padding-box;
+  border: 3px solid transparent;   /* görünür kalınlık: 4px */
+  border-radius: var(--sl-radius-full);
+}
+
+.sl-listbox::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--sl-fg) 30%, transparent);
+  background-clip: padding-box;
+}
+
+/* ---------- SANAL LİSTE YARDIMCILARI (JS sürer) ---------- */
+
+.sl-vsizer {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 1px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.sl-vlist {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  will-change: transform;
+}
+
+/* ---------- OPTION ---------- */
+
+.sl-option {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-space-2);
+  min-block-size: var(--sl-option-h);
+  padding-block: 0;
+  padding-inline: var(--sl-option-pad-x);
+  border-radius: var(--sl-radius-sm);
+  color: var(--sl-fg);
+  cursor: pointer;
+  user-select: none;
+}
+
+.sl-option-label {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Fare ve klavye AYNI vurguyu paylaşır: yalnızca data-active (JS yazar) */
+.sl-option[data-active] {
+  background-color: var(--sl-muted);
+}
+
+/* Seçili: zemin şeffaf kalır, yalnızca check konuşur */
+.sl-check {
+  flex: none;
+  inline-size: var(--sl-icon-size);
+  block-size: var(--sl-icon-size);
+  color: var(--sl-accent);
+  opacity: 0;
+}
+
+[aria-selected="true"] .sl-check {
+  opacity: 1;
+}
+
+.sl-option[aria-disabled="true"] {
+  background-color: transparent;
+  color: color-mix(in oklab, var(--sl-muted-fg) 55%, transparent);
+  cursor: default;
+}
+
+/* ---------- GRUP BAŞLIĞI ---------- */
+
+.sl-group-label {
+  padding-block: var(--sl-space-2) var(--sl-space-1);   /* 8px üst, 4px alt */
+  padding-inline: var(--sl-space-2);
+  color: var(--sl-muted-fg);
+  font-size: var(--sl-font-size-caption);
+  font-weight: var(--sl-font-weight-medium);
+}
+
+.sl-group-label:not(:first-child) {
+  margin-block-start: var(--sl-space-1);
+  border-block-start: 1px solid var(--sl-hairline);
+}
+
+/* ---------- BOŞ / YÜKLEME / OLUŞTUR ---------- */
+
+.sl-empty {
+  padding-block: var(--sl-space-6);   /* 24px */
+  padding-inline: var(--sl-space-3);  /* 12px */
+  color: var(--sl-muted-fg);
+  font-size: var(--sl-font-size);
+  text-align: center;
+}
+
+.sl-loading {
+  padding-inline: var(--sl-option-pad-x);
+}
+
+.sl-skeleton {
+  display: block;
+  block-size: calc(var(--sl-option-h) - 0.75rem);
+  margin-block: 0.375rem;   /* satır adımı = option yüksekliği */
+  border-radius: var(--sl-radius-xs);
+  background-color: var(--sl-muted);
+  background-image: linear-gradient(
+    90deg,
+    transparent 20%,
+    color-mix(in oklab, var(--sl-fg) 5%, transparent) 50%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: sl-shimmer 1.2s var(--sl-ease-inout) infinite;
+}
+
+.sl-skeleton:nth-child(1) { inline-size: 60%; }
+.sl-skeleton:nth-child(2) { inline-size: 80%; }
+.sl-skeleton:nth-child(3) { inline-size: 40%; }
+
+.sl-create {
+  display: flex;
+  align-items: center;
+  gap: var(--sl-space-2);
+  min-block-size: var(--sl-option-h);
+  padding-block: 0;
+  padding-inline: var(--sl-option-pad-x);
+  border-radius: var(--sl-radius-sm);
+  color: var(--sl-accent);
+  cursor: pointer;
+  user-select: none;
+}
+
+.sl-create svg {
+  inline-size: var(--sl-icon-size);
+  block-size: var(--sl-icon-size);
+}
+
+.sl-create[data-active] {
+  background-color: var(--sl-muted);
+}
+
+/* Liste doluysa üstte hairline ayraç + 4px boşluk */
+.sl-create:not(:first-child) {
+  margin-block-start: var(--sl-space-1);
+  border-block-start: 1px solid var(--sl-hairline);
+}
+
+/* ---------- HAREKET ---------- */
+
+@keyframes sl-spin {
+  to { transform: rotate(1turn); }
+}
+
+@keyframes sl-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+@keyframes sl-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--sl-panel-shift, -0.25rem)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sl-panel-out {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.985); }
+}
+
+.sl-panel[data-state="open"] {
+  animation: sl-panel-in var(--sl-dur-2) var(--sl-ease-out);
+}
+
+/* Kapanış açılıştan hızlı; JS animationend'de paneli gizler */
+.sl-panel[data-state="closed"] {
+  animation: sl-panel-out var(--sl-dur-1) var(--sl-ease-in) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sl-panel {
+    animation-duration: 1ms !important;
+    transform: none !important;
+  }
+  .sl-chevron {
+    transition: none !important;
+  }
+  .sl-skeleton {
+    animation: none !important;   /* shimmer kapalı, tamamen statik */
+  }
+  .sl-chip {
+    transition: none !important;
+  }
+}
+
+/* ---------- FORCED COLORS (Windows Yüksek Kontrast) ---------- */
+
+@media (forced-colors: active) {
+  .sl-check {
+    color: CanvasText;
+  }
+  .sl-option[aria-selected="true"] {
+    outline: 1px solid;
+    outline-offset: -1px;
+  }
+  .sl-option[data-active],
+  .sl-create[data-active] {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+  [data-active] .sl-check {
+    color: HighlightText;
+  }
+  [data-disabled] .sl-trigger,
+  .sl-option[aria-disabled="true"] {
+    color: GrayText;
+  }
+  .sl-chip {
+    outline: 1px solid;
+    outline-offset: -1px;
+  }
+}

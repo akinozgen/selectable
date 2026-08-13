@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Selectable — Demo</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 860px;
+        margin: 3rem auto;
+        padding: 0 1rem;
+        display: grid;
+        gap: 2rem;
+      }
+      section { display: grid; gap: 0.5rem; }
+      label { font-weight: 600; font-size: 14px; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+      .dark-zone { background: #16181c; padding: 1.5rem; border-radius: 12px; }
+      .dark-zone label { color: #e6e8eb; }
+      .overflow-trap {
+        overflow: hidden; height: 120px; border: 1px dashed #ccc;
+        padding: 1rem; border-radius: 8px;
+      }
+      output { font-size: 13px; color: #667085; }
+    </style>
+  </head>
+  <body>
+    <h1>Selectable</h1>
+
+    <div class="row">
+      <section>
+        <label for="basic">Tekli — az seçenek (aramasız)</label>
+        <select id="basic" name="city">
+          <option value="">Şehir seçiniz…</option>
+          <option value="34">İstanbul</option>
+          <option value="06">Ankara</option>
+          <option value="35">İzmir</option>
+          <option value="16" disabled>Bursa (disabled)</option>
+          <option value="07">Antalya</option>
+        </select>
+        <output id="basic-out"></output>
+      </section>
+
+      <section>
+        <label for="grouped">Tekli — gruplu + aramalı</label>
+        <select id="grouped" name="district">
+          <option value="">İlçe seçiniz…</option>
+          <optgroup label="İstanbul">
+            <option value="kadikoy">Kadıköy</option>
+            <option value="besiktas">Beşiktaş</option>
+            <option value="uskudar">Üsküdar</option>
+            <option value="sisli">Şişli</option>
+            <option value="fatih">Fatih</option>
+          </optgroup>
+          <optgroup label="Ankara">
+            <option value="cankaya">Çankaya</option>
+            <option value="kecioren">Keçiören</option>
+            <option value="yenimahalle">Yenimahalle</option>
+          </optgroup>
+          <optgroup label="İzmir">
+            <option value="konak">Konak</option>
+            <option value="bornova">Bornova</option>
+            <option value="karsiyaka">Karşıyaka</option>
+          </optgroup>
+        </select>
+      </section>
+
+      <section>
+        <label for="multi">Çoklu — chip'ler (wrap)</label>
+        <select id="multi" name="tags" multiple>
+          <option value="js" selected>JavaScript</option>
+          <option value="ts" selected>TypeScript</option>
+          <option value="css">CSS</option>
+          <option value="html">HTML</option>
+          <option value="php">PHP</option>
+          <option value="py">Python</option>
+          <option value="go">Go</option>
+          <option value="rs">Rust</option>
+          <option value="sql">SQL</option>
+        </select>
+        <output id="multi-out"></output>
+      </section>
+
+      <section>
+        <label for="multi-counter">Çoklu — +N counter, max 5</label>
+        <select id="multi-counter" multiple>
+          <option value="1" selected>Elma</option>
+          <option value="2" selected>Armut</option>
+          <option value="3" selected>Kiraz</option>
+          <option value="4">Vişne</option>
+          <option value="5">Şeftali</option>
+          <option value="6">Kayısı</option>
+          <option value="7">Erik</option>
+        </select>
+      </section>
+
+      <section>
+        <label for="big">10.000 seçenek — sanal liste</label>
+        <select id="big"></select>
+      </section>
+
+      <section class="overflow-trap">
+        <label for="trapped">overflow:hidden tuzağı içinde</label>
+        <select id="trapped">
+          <option value="">Seç…</option>
+          <option value="a">Panel bu kutudan taşabilmeli</option>
+          <option value="b">Çünkü top-layer'dayız</option>
+          <option value="c">z-index savaşı yok</option>
+        </select>
+      </section>
+    </div>
+
+    <div class="dark-zone">
+      <section>
+        <label for="dark">Koyu tema</label>
+        <select id="dark" multiple>
+          <option value="1" selected>Gece modu</option>
+          <option value="2">Sistem</option>
+          <option value="3">Aydınlık</option>
+        </select>
+      </section>
+    </div>
+
+    <form id="form-test">
+      <section>
+        <label for="formsel">Form entegrasyonu (reset dener)</label>
+        <select id="formsel" name="fruit">
+          <option value="">Meyve…</option>
+          <option value="elma" selected>Elma</option>
+          <option value="armut">Armut</option>
+        </select>
+        <div><button type="reset">Formu Sıfırla</button></div>
+      </section>
+    </form>
+
+    <script type="module">
+      import "@/styles/tokens.css";
+      import "@/styles/selectable.css";
+      import { Selectable, tr } from "@/index.ts";
+
+      const basic = new Selectable("#basic", { i18n: tr, clearable: true });
+      basic.on("change", ({ value, options }) => {
+        document.getElementById("basic-out").textContent =
+          `değer: ${value.join(", ") || "—"} (${options.map(o => o.label).join(", ")})`;
+      });
+
+      new Selectable("#grouped", { i18n: tr, search: true });
+
+      const multi = new Selectable("#multi", { i18n: tr, clearable: true });
+      multi.on("change", ({ value }) => {
+        document.getElementById("multi-out").textContent = `değer: [${value.join(", ")}]`;
+      });
+
+      new Selectable("#multi-counter", {
+        i18n: tr, overflow: "counter", maxSelections: 5, search: true,
+      });
+
+      const big = document.getElementById("big");
+      const frag = document.createDocumentFragment();
+      const ph = document.createElement("option");
+      ph.value = ""; ph.textContent = "Kayıt seçiniz…";
+      frag.appendChild(ph);
+      for (let i = 1; i <= 10000; i++) {
+        const o = document.createElement("option");
+        o.value = String(i);
+        o.textContent = `Kayıt #${i.toString().padStart(5, "0")}`;
+        frag.appendChild(o);
+      }
+      big.appendChild(frag);
+      new Selectable(big, { i18n: tr, search: true, clearable: true });
+
+      new Selectable("#trapped", { i18n: tr });
+      new Selectable("#dark", { i18n: tr, theme: "dark" });
+      new Selectable("#formsel", { i18n: tr });
+    </script>
+  </body>
+</html>
