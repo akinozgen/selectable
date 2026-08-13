@@ -74,6 +74,8 @@ A string selector enhances **all** matches (returned instance = first match; oth
 | `clearable` | `boolean` | `false` | Shows an ✕ that clears the selection. |
 | `overflow` | `"wrap" \| "counter"` | `"wrap"` | Multi-mode chips: wrap lines, or collapse into a `+N` counter chip. |
 | `closeOnSelect` | `boolean` | `!multiple` | Close panel after selecting. |
+| `autofocus` | `boolean` | `false` | Opens the panel at first opportunity after construction (microtask) and captures the keyboard (search input when searchable, else trigger). Native-autofocus semantics: only the FIRST constructed autofocus instance on a page wins; never steals focus the user already placed; `beforeOpen` can veto. |
+| `next` | `string \| HTMLSelectElement \| Selectable` | — | Chained form flow: control to open after a USER PICK closes this panel (single mode: every pick; multi: only with explicit `closeOnSelect: true`). Resolved LAZILY at advance time (selector → `querySelector`, element → `getInstance`, instance direct). Unresolvable/destroyed/disabled targets `console.warn` and stop the chain (no chaining past a disabled target). NOT advanced by Escape/Tab/outside-click closes, `setValue()`, `clear()`, chip removal, or vetoed before-events. Order guarantee: native `change`/`input` dispatch first, panel closes, THEN the chain advances — `change` handlers can `setOptions()` the next select before its panel opens. |
 | `selectOnTab` | `boolean` | `false` | Tab commits the active option before closing. |
 | `maxSelections` | `number` | `Infinity` | Multi-mode selection cap (announces via live region). |
 | `selectAll` | `boolean \| { groups?: boolean }` | `false` | Multi-mode only (warns + ignored otherwise). Pinned "Select all/Deselect all" header row; toggles the **filtered enabled** options in ONE change event, respecting `maxSelections`. `{ groups: true }` also makes group headers per-group toggles. Both rows show an always-visible tri-state checkbox (empty/minus/check) driven by `data-checked="all\|some\|none"`; the checkbox spans are pointer-only (`aria-hidden`). |
@@ -357,6 +359,29 @@ sel.on("beforeClose", (e) => {
 sel.on("beforeCreate", (e) => {
   if (!/^[a-z0-9-]+$/.test(e.option.value)) e.preventDefault();
 });
+```
+
+### 10. Chained address form (il → ilçe → mahalle)
+
+```js
+// `next` auto-opens the following select after a pick closes the panel;
+// `autofocus` starts the flow on page load (first constructed instance only).
+const il = new Selectable("#il", { autofocus: true, next: "#ilce" });
+const ilce = new Selectable("#ilce", { next: "#mahalle" });
+const mahalle = new Selectable("#mahalle"); // terminal — no next
+
+// ORDER GUARANTEE: change handlers run BEFORE the next panel opens —
+// populate the dependent select here and its panel opens already filled.
+il.on("change", ({ value }) => {
+  ilce.setValue([], { silent: true });
+  ilce.setOptions(districtsByProvince[value[0]] ?? []);
+});
+ilce.on("change", ({ value }) => {
+  mahalle.setValue([], { silent: true });
+  mahalle.setOptions(neighborhoodsByDistrict[value[0]] ?? []);
+});
+// Escape/outside-click dismissals, setValue(), clear() and chip removal do
+// NOT advance the chain; multi-mode chains need explicit closeOnSelect: true.
 ```
 
 ## Gotchas

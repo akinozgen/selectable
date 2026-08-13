@@ -61,6 +61,13 @@ const instances = new WeakMap<HTMLSelectElement, Selectable>();
 const SEARCH_AUTO_THRESHOLD = 8;
 
 /**
+ * Native-autofocus parity: when several instances on the page pass
+ * `autofocus: true`, only the FIRST constructed one claims it — even if its
+ * open is later blocked (focus guard / beforeOpen veto), the claim stands.
+ */
+let autofocusClaimed = false;
+
+/**
  * activeIndex sentinel for the "select all" header row — a navigable virtual
  * row BEFORE index 0, the same way the create row extends the list past the
  * end at `filtered.length`. (-1 stays "no active row".)
@@ -261,6 +268,42 @@ export class Selectable<T = unknown> {
       if (extra instanceof HTMLSelectElement && !instances.has(extra)) {
         new Selectable(extra, options);
       }
+    }
+
+    if (options.autofocus) this.scheduleAutofocus();
+  }
+
+  /**
+   * `autofocus`: open at the first opportunity AFTER the instance is fully
+   * wired (microtask — never synchronously inside the constructor). Guards:
+   * - module flag: only the first constructed autofocus instance wins;
+   * - never steal focus the user already placed on something interactive
+   *   (only body / documentElement / null count as "nothing focused");
+   * - open() itself still honors disabled state and the beforeOpen veto.
+   */
+  private scheduleAutofocus(): void {
+    if (autofocusClaimed) return;
+    autofocusClaimed = true;
+    queueMicrotask(() => {
+      if (this.destroyed) return;
+      const active = document.activeElement;
+      if (active && active !== document.body && active !== document.documentElement) {
+        return;
+      }
+      this.openCapture();
+    });
+  }
+
+  /**
+   * Opens and captures the keyboard: open() already focuses the search input
+   * when searchable; no-search panels get the trigger focused so panel keys
+   * (arrows, Enter, Escape) land on the freshly opened instance. Used by
+   * autofocus and by chain advances — a veto/disabled open leaves focus alone.
+   */
+  private openCapture(): void {
+    this.open();
+    if (this.isOpen && !(this.cfg.searchable && this.refs.searchInput)) {
+      this.refs.trigger.focus({ preventScroll: true });
     }
   }
 
@@ -663,6 +706,7 @@ export class Selectable<T = unknown> {
   private toggleValue(value: string): void {
     const s = this.store.getState();
     const option = optionFor(s, value);
+    let picked = false; // a value was ADDED — deselects never advance a chain
     if (this.cfg.multiple) {
       if (s.selected.includes(value)) {
         const ok = this.applySelection(
@@ -683,6 +727,7 @@ export class Selectable<T = unknown> {
           cancellable: true,
         });
         if (!ok) return;
+        picked = true;
         this.live.announce(
           this.cfg.messages.itemSelected(option.label, s.selected.length + 1),
         );
@@ -691,8 +736,90 @@ export class Selectable<T = unknown> {
       if (!this.applySelection([value], { silent: false, cancellable: true })) {
         return;
       }
+      picked = true;
     }
-    if (this.cfg.closeOnSelect) this.close();
+    if (this.cfg.closeOnSelect) {
+      const wasOpen = this.isOpen;
+      this.close();
+      // Chain rule: only a user PICK that actually closed the panel advances
+      // to `next` — deselects (chips/Backspace), beforeClose vetoes and
+      // closed-panel picks never do. Native change/input already dispatched
+      // synchronously inside applySelection, BEFORE this close.
+      if (picked && wasOpen && !this.isOpen) this.advanceChain();
+    }
+  }
+
+  /**
+   * `next` chain: after a pick closed this panel, open the next control.
+   * queueMicrotask keeps the ORDER GUARANTEE airtight: the native
+   * change/input events fired before the close, and any handler work they
+   * queued as microtasks (dependent-select setOptions etc.) drains before
+   * the next panel opens.
+   */
+  private advanceChain(): void {
+    if (this.opts.next === undefined) return;
+    queueMicrotask(() => {
+      if (this.destroyed) return;
+      const next = this.resolveNext();
+      if (!next) return; // unresolvable → warned inside resolveNext
+      if (next.store.getState().disabled) {
+        console.warn(
+          "[selectable] `next`: target instance is disabled — chain stopped.",
+        );
+        return;
+      }
+      next.openCapture(); // honors the target's own beforeOpen veto
+    });
+  }
+
+  /**
+   * LAZY `next` resolution — evaluated fresh at every advance, never cached
+   * (the target may be enhanced, replaced or destroyed at any time).
+   * Unresolvable targets warn and return null (the chain silently stops).
+   */
+  private resolveNext(): Selectable | null {
+    const spec = this.opts.next;
+    if (spec === undefined) return null;
+    if (typeof spec === "string") {
+      const el = document.querySelector(spec);
+      if (!el) {
+        console.warn(
+          `[selectable] \`next\`: no element matches "${spec}" — chain stopped.`,
+        );
+        return null;
+      }
+      if (!(el instanceof HTMLSelectElement)) {
+        console.warn(
+          `[selectable] \`next\`: "${spec}" is not a <select> element — chain stopped.`,
+        );
+        return null;
+      }
+      const inst = instances.get(el);
+      if (!inst) {
+        console.warn(
+          `[selectable] \`next\`: "${spec}" is not enhanced by Selectable — chain stopped.`,
+        );
+        return null;
+      }
+      return inst;
+    }
+    if (spec instanceof HTMLSelectElement) {
+      const inst = instances.get(spec);
+      if (!inst) {
+        console.warn(
+          "[selectable] `next`: element is not enhanced by Selectable — chain stopped.",
+        );
+        return null;
+      }
+      return inst;
+    }
+    if (spec.destroyed) {
+      console.warn(
+        "[selectable] `next`: target instance is destroyed — chain stopped.",
+      );
+      return null;
+    }
+    return spec as Selectable;
   }
 
   /** The options a select-all toggle operates on: FILTERED and enabled. */

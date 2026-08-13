@@ -1,5 +1,7 @@
 /** Public data model & option types. */
 
+import type { Selectable } from "../selectable";
+
 export interface SelectableOption<T = unknown> {
   value: string;
   label: string;
@@ -107,6 +109,25 @@ export interface SelectableOptions<T = unknown> {
   /** Chip overflow behaviour in multiple mode. */
   overflow?: "wrap" | "counter";
   closeOnSelect?: boolean;
+  /**
+   * Opens the panel at the first opportunity after construction (microtask),
+   * focusing the search input when searchable, else the trigger. Like native
+   * `autofocus`: only the FIRST constructed autofocus instance on a page
+   * wins, and focus is never stolen when the user already focused something
+   * interactive. `beforeOpen` can veto. Default `false`.
+   */
+  autofocus?: boolean;
+  /**
+   * Chained form flow: the control to open after a user pick CLOSES this
+   * panel (single mode: every pick; multiple mode: only with an explicit
+   * `closeOnSelect: true`). Resolved LAZILY at advance time — a selector
+   * string (`document.querySelector`), a native `<select>` (must be
+   * enhanced), or a Selectable instance. Unresolvable or disabled targets
+   * `console.warn` and stop the chain (no chaining past a disabled target).
+   * Escape/Tab/outside-click closes, programmatic `setValue()`, `clear()`
+   * and chip removal never advance.
+   */
+  next?: string | HTMLSelectElement | Selectable;
   selectOnTab?: boolean;
   maxSelections?: number;
   /**

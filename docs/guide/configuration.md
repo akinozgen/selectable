@@ -28,6 +28,8 @@ const sel = new Selectable("#city", { /* options */ });
 | [`clearable`](#clearable) | `boolean` | `false` | Clear (✕) button |
 | [`overflow`](#overflow) | `"wrap" \| "counter"` | `"wrap"` | Chip overflow behavior |
 | [`closeOnSelect`](#closeonselect) | `boolean` | `!multiple` | Close after selecting |
+| [`autofocus`](#autofocus) | `boolean` | `false` | Open + capture keyboard at first opportunity after construction |
+| [`next`](#next) | `string \| HTMLSelectElement \| Selectable` | — | Chained form flow: control to open after a pick closes this panel |
 | [`selectOnTab`](#selectontab) | `boolean` | `false` | Tab commits the active option |
 | [`maxSelections`](#maxselections) | `number` | `Infinity` | Multi-select cap |
 | [`selectAll`](#selectall) | `boolean \| { groups?: boolean }` | `false` | "Select all" header row (+ per-group toggles) in multi-mode |
@@ -238,6 +240,97 @@ Chip overflow in multi-mode: `"wrap"` (default) wraps chips onto new lines;
 
 Default: `true` in single mode, `false` in multiple mode (the panel stays open
 so you can keep picking). Set `true` to close after each pick in multi-mode.
+
+## `autofocus`
+
+When `true`, the panel opens at the **first opportunity after construction**
+(a microtask — never synchronously inside the constructor) and captures the
+keyboard: the search input is focused when the panel is searchable, otherwise
+the trigger. The semantics mirror native `autofocus`:
+
+- If **several** instances on the page pass `autofocus: true`, only the
+  **first constructed** one wins.
+- Focus is never stolen: when the user (or your code) already focused
+  something interactive, the autofocus open is skipped entirely.
+- `beforeOpen` can veto it like any other open.
+
+```js
+new Selectable("#il", { autofocus: true }); // panel opens on page load
+```
+
+Combined with [`next`](#next), this turns a page into a keyboard-first form
+flow that starts by itself.
+
+## `next`
+
+Chained form flow: after a **user pick closes the panel**, the `next` control
+opens automatically. Accepts a CSS selector string
+(`document.querySelector`), a native `<select>` element (must be enhanced),
+or a `Selectable` instance — resolved **lazily at advance time**, never at
+construction, so the target may be enhanced later or replaced without
+re-wiring.
+
+Advance rules:
+
+- **Single mode**: every pick advances (the default `closeOnSelect: true`
+  closes the panel).
+- **Multiple mode**: only with an explicit `closeOnSelect: true` — the pick
+  that closes the panel advances. The multi default (panel stays open) never
+  advances.
+- **Never advanced by**: Escape / Tab / outside-click closes, programmatic
+  `setValue()`, `clear()`, chip removal, or vetoed
+  `beforeChange`/`beforeClose`.
+- **Unresolvable targets** (nothing matches the selector, the element is not
+  enhanced, the instance is destroyed) and **disabled** targets
+  `console.warn` and stop the chain — there is deliberately no chaining past
+  a disabled target to *its* `next`.
+- Advancing calls the target's `open()`: its own `beforeOpen` veto is
+  respected and its search input is focused when searchable (otherwise its
+  trigger), so the keyboard follows the chain.
+
+**Order guarantee** — critical for dependent selects: the native
+`change`/`input` events dispatch **first**, then the panel closes, and only
+**then** (a microtask later) does the chain advance. Code reacting to
+`change` — e.g. loading the district options for the picked province via
+`setOptions()` — runs before the next panel opens.
+
+### Chained form flow: il → ilçe → mahalle
+
+```html
+<select id="il">
+  <option value="">İl seçiniz…</option>
+  <option value="34">İstanbul</option>
+  <option value="06">Ankara</option>
+</select>
+<select id="ilce"><option value="">İlçe seçiniz…</option></select>
+<select id="mahalle"><option value="">Mahalle seçiniz…</option></select>
+```
+
+```js
+const districts = {
+  "34": [{ value: "kadikoy", label: "Kadıköy" }, { value: "besiktas", label: "Beşiktaş" }],
+  "06": [{ value: "cankaya", label: "Çankaya" }, { value: "kecioren", label: "Keçiören" }],
+};
+
+const il = new Selectable("#il", { autofocus: true, next: "#ilce" });
+const ilce = new Selectable("#ilce", { next: "#mahalle" });
+const mahalle = new Selectable("#mahalle"); // terminal — no next
+
+// Runs BEFORE the #ilce panel opens (order guarantee):
+il.on("change", ({ value }) => {
+  ilce.setValue([], { silent: true });
+  ilce.setOptions(districts[value[0]] ?? []);
+});
+ilce.on("change", ({ value }) => {
+  mahalle.setValue([], { silent: true });
+  mahalle.setOptions(loadNeighborhoods(value[0])); // sync map lookup
+});
+```
+
+Picking a province opens the district panel already populated; picking a
+district opens the neighborhood panel; picking a neighborhood ends the chain
+(no `next` on the last instance). Dismissing any panel (Escape, outside
+click) stops the flow at that step.
 
 ## `selectOnTab`
 
