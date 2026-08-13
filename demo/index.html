@@ -148,6 +148,18 @@
       </section>
 
       <section>
+        <label for="veto">Veto — beforeChange / beforeClose (tekli, aramasız)</label>
+        <select id="veto" name="veto">
+          <option value="">Seçiniz…</option>
+          <option value="serbest-1">Serbest 1</option>
+          <option value="forbidden">Yasaklı (seçilemez)</option>
+          <option value="serbest-2">Serbest 2</option>
+        </select>
+        <label><input type="checkbox" id="veto-lock" /> panel kilitli</label>
+        <output id="veto-out"></output>
+      </section>
+
+      <section>
         <label for="subtext">Subtext + görsel — tekli, aramalı (60 kayıt, sanal)</label>
         <select id="subtext" name="kisi">
           <option value="">Kişi seçiniz…</option>
@@ -262,6 +274,20 @@
       remote.on("change", ({ options }) => {
         document.getElementById("remote-out").textContent =
           options.map((o) => o.label).join(", ") || "—";
+      });
+
+      // Veto fixture: beforeChange "forbidden"ı reddeder; beforeClose kilit
+      // işaretliyken paneli açık tutar (destroy/disable yine de kapatır).
+      const veto = new Selectable("#veto", { i18n: tr });
+      veto.on("beforeChange", (e) => {
+        if (e.next.includes("forbidden")) e.preventDefault();
+      });
+      veto.on("beforeClose", (e) => {
+        if (document.getElementById("veto-lock").checked) e.preventDefault();
+      });
+      veto.on("change", ({ value }) => {
+        document.getElementById("veto-out").textContent =
+          `değer: ${value.join(", ") || "—"}`;
       });
 
       // Subtext fixture'ını 60 kayda tamamla (sanal liste + tek tip satır

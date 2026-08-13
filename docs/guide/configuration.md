@@ -458,7 +458,44 @@ automatically.
 | `create` | `{ option }` | Tag created |
 | `clear` | — | Selection cleared |
 | `destroy` | — | Instance destroyed |
+| `beforeOpen` | `{ preventDefault(), defaultPrevented }` | Before the panel opens (cancellable) |
+| `beforeClose` | `{ preventDefault(), defaultPrevented }` | Before the panel closes (cancellable) |
+| `beforeChange` | `{ value, options, next, nextOptions, preventDefault(), defaultPrevented }` | Before a user-initiated selection change (cancellable) |
+| `beforeCreate` | `{ label, option, preventDefault(), defaultPrevented }` | Before a tag is created (cancellable) |
 
 In addition, every selection change fires bubbling native `input` + `change`
 events on the `<select>` — the events form libraries and frameworks listen
 for.
+
+### Cancellable before-events
+
+The four `before*` events fire **before** their action. Calling
+`e.preventDefault()` in any handler aborts the action silently — no state
+change, no follow-up events (no `change`/`open`/`close`/`create`/`clear`,
+no native events, the native select untouched):
+
+```js
+sel.on("beforeChange", (e) => {
+  // e.value/e.options = current selection; e.next/e.nextOptions = proposed
+  if (e.next.includes("forbidden")) e.preventDefault();
+});
+sel.on("beforeClose", (e) => {
+  if (formIsDirty) e.preventDefault(); // keep the panel open
+});
+```
+
+Scope rules:
+
+- `beforeOpen` gates every open — user interaction **and** the public
+  `open()`/`toggle()` calls.
+- `beforeClose` gates every close (Escape, outside click, Tab,
+  `closeOnSelect`, public `close()`) **except** teardown: `destroy()` and
+  `disable()` always close without asking.
+- `beforeChange` gates **user-initiated** selection changes only: option
+  picks, chip removal / `Backspace`, `clear()`, and select-all / group
+  toggles (a batch fires **one** `beforeChange` with the full proposed
+  `next` array). Programmatic `setValue()` and native-sync paths (form
+  reset, external `<option>` mutations) are *not* cancellable.
+- `beforeCreate` fires before a tag is committed; `option` is the would-be
+  option (from your `tags.create` factory or the default). Vetoing leaves
+  no native `<option>` behind and keeps the query in the search box.

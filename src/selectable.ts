@@ -1,6 +1,7 @@
 import { createStore, createEmitter, type Store, type Emitter } from "./core/store";
 import type {
   AsyncDataSource,
+  SelectableCancellable,
   SelectableEventMap,
   SelectableMessages,
   SelectableOption,
@@ -310,6 +311,7 @@ export class Selectable<T = unknown> {
   open(): void {
     const s = this.store.getState();
     if (s.open || s.disabled || this.destroyed) return;
+    if (!this.emitCancellable("beforeOpen", {})) return;
     const filtered = this.computeFiltered("");
     this.store.setState({
       open: true,
@@ -333,6 +335,13 @@ export class Selectable<T = unknown> {
   }
 
   close(opts: { focusTrigger?: boolean } = {}): void {
+    if (!this.store.getState().open) return;
+    if (!this.emitCancellable("beforeClose", {})) return;
+    this.doClose(opts);
+  }
+
+  /** Close without the beforeClose gate — teardown (destroy/disable) path. */
+  private doClose(opts: { focusTrigger?: boolean } = {}): void {
     if (!this.store.getState().open) return;
     this.store.setState({ open: false, query: "", activeIndex: -1 });
     this.panel.close();
@@ -392,7 +401,7 @@ export class Selectable<T = unknown> {
   }
 
   clear(): void {
-    this.applySelection([], { silent: false });
+    if (!this.applySelection([], { silent: false, cancellable: true })) return;
     this.emitter.emit("clear", undefined);
   }
 
@@ -403,14 +412,14 @@ export class Selectable<T = unknown> {
 
   disable(): void {
     this.select.disabled = true;
-    if (this.isOpen) this.close({ focusTrigger: false });
+    if (this.isOpen) this.doClose({ focusTrigger: false });
     this.store.setState({ disabled: true });
   }
 
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
-    this.close({ focusTrigger: false });
+    this.doClose({ focusTrigger: false });
     if (this.queryTimer) clearTimeout(this.queryTimer);
     this.loadAbort?.abort();
     this.abort.abort();
@@ -589,9 +598,30 @@ export class Selectable<T = unknown> {
     }
   }
 
-  private applySelection(next: string[], opts: { silent: boolean }): void {
+  /**
+   * Writes the selection. Returns `false` only when a `cancellable` write was
+   * vetoed via beforeChange — a no-op (equal arrays) returns `true` so caller
+   * follow-ups (closeOnSelect, announcements) behave exactly as before.
+   * `cancellable` marks USER-INITIATED writes; programmatic setValue() and
+   * native-sync paths stay non-cancellable.
+   */
+  private applySelection(
+    next: string[],
+    opts: { silent: boolean; cancellable?: boolean },
+  ): boolean {
     const s = this.store.getState();
-    if (arraysEqual(s.selected, next)) return;
+    if (arraysEqual(s.selected, next)) return true;
+    if (
+      opts.cancellable &&
+      !this.emitCancellable("beforeChange", {
+        value: [...s.selected],
+        options: s.selected.map((v) => optionFor(s, v)),
+        next: [...next],
+        nextOptions: next.map((v) => optionFor(s, v)),
+      })
+    ) {
+      return false;
+    }
     // Async/tag values may not exist as <option> yet; the form needs them.
     for (const v of next) this.ensureNativeOption(optionFor(s, v));
     this.store.setState({ selected: next });
@@ -603,6 +633,31 @@ export class Selectable<T = unknown> {
         options: next.map((v) => optionFor(state, v)),
       });
     }
+    return true;
+  }
+
+  /**
+   * Emits a cancellable before-event (preventDefault/defaultPrevented
+   * plumbing built here). Returns `true` when the action may proceed.
+   */
+  private emitCancellable<
+    K extends "beforeOpen" | "beforeClose" | "beforeChange" | "beforeCreate",
+  >(
+    type: K,
+    detail: Omit<SelectableEventMap<T>[K], keyof SelectableCancellable>,
+  ): boolean {
+    let prevented = false;
+    const full = {
+      ...detail,
+      get defaultPrevented() {
+        return prevented;
+      },
+      preventDefault() {
+        prevented = true;
+      },
+    } as unknown as SelectableEventMap<T>[K];
+    this.emitter.emit(type, full);
+    return !prevented;
   }
 
   private toggleValue(value: string): void {
@@ -610,7 +665,11 @@ export class Selectable<T = unknown> {
     const option = optionFor(s, value);
     if (this.cfg.multiple) {
       if (s.selected.includes(value)) {
-        this.applySelection(s.selected.filter((v) => v !== value), { silent: false });
+        const ok = this.applySelection(
+          s.selected.filter((v) => v !== value),
+          { silent: false, cancellable: true },
+        );
+        if (!ok) return; // vetoed: no announcement, no closeOnSelect
         this.live.announce(
           this.cfg.messages.itemDeselected(option.label, s.selected.length - 1),
         );
@@ -619,13 +678,19 @@ export class Selectable<T = unknown> {
           this.live.announce(this.cfg.messages.maxReached(this.cfg.maxSelections));
           return;
         }
-        this.applySelection([...s.selected, value], { silent: false });
+        const ok = this.applySelection([...s.selected, value], {
+          silent: false,
+          cancellable: true,
+        });
+        if (!ok) return;
         this.live.announce(
           this.cfg.messages.itemSelected(option.label, s.selected.length + 1),
         );
       }
     } else {
-      this.applySelection([value], { silent: false });
+      if (!this.applySelection([value], { silent: false, cancellable: true })) {
+        return;
+      }
     }
     if (this.cfg.closeOnSelect) this.close();
   }
@@ -659,7 +724,10 @@ export class Selectable<T = unknown> {
     if (allSelected) {
       const drop = new Set(values);
       const next = s.selected.filter((v) => !drop.has(v));
-      this.applySelection(next, { silent: false });
+      // ONE cancellable beforeChange for the whole batch (full next array).
+      if (!this.applySelection(next, { silent: false, cancellable: true })) {
+        return;
+      }
       this.live.announce(this.cfg.messages.selectedCount(next.length));
       return;
     }
@@ -673,7 +741,9 @@ export class Selectable<T = unknown> {
       }
       next.push(v);
     }
-    this.applySelection(next, { silent: false });
+    if (!this.applySelection(next, { silent: false, cancellable: true })) {
+      return;
+    }
     this.live.announce(
       maxHit
         ? this.cfg.messages.maxReached(this.cfg.maxSelections)
@@ -705,6 +775,7 @@ export class Selectable<T = unknown> {
     if (label === null) return;
     const option: SelectableOption<T> =
       this.cfg.tags?.create?.(label) ?? { value: label, label };
+    if (!this.emitCancellable("beforeCreate", { label, option })) return;
     this.ensureNativeOption(option);
     this.setOptions([...this.store.getState().options, option]);
     this.toggleValue(option.value);

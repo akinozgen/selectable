@@ -129,6 +129,16 @@ export interface SelectableOptions<T = unknown> {
   virtual?: boolean | { optionHeight?: number; overscan?: number };
 }
 
+/**
+ * Cancellable before-event plumbing (DOM-event style). Calling
+ * `preventDefault()` inside any handler aborts the action silently:
+ * no state change and no follow-up events.
+ */
+export interface SelectableCancellable {
+  preventDefault(): void;
+  defaultPrevented: boolean;
+}
+
 export interface SelectableEventMap<T = unknown> {
   change: { value: string[]; options: SelectableOption<T>[] };
   open: void;
@@ -139,6 +149,27 @@ export interface SelectableEventMap<T = unknown> {
   create: { option: SelectableOption<T> };
   clear: void;
   destroy: void;
+  /** Before the panel opens (any user path AND public open()/toggle()). */
+  beforeOpen: SelectableCancellable;
+  /** Before the panel closes — NOT consulted on destroy()/disable() teardown. */
+  beforeClose: SelectableCancellable;
+  /**
+   * Before a USER-INITIATED selection change (picks, chip removal, backspace,
+   * clear, select-all batches). `value`/`options` = current selection,
+   * `next`/`nextOptions` = proposed. Programmatic setValue() and native-sync
+   * paths (form reset, external mutations) do NOT fire this.
+   */
+  beforeChange: {
+    value: string[];
+    next: string[];
+    options: SelectableOption<T>[];
+    nextOptions: SelectableOption<T>[];
+  } & SelectableCancellable;
+  /** Before a tag is created; `option` is the would-be option. */
+  beforeCreate: {
+    label: string;
+    option: SelectableOption<T>;
+  } & SelectableCancellable;
 }
 
 /** Internal reactive state — single source of truth. */

@@ -9,6 +9,7 @@ export { asyncSource } from "./data/async-source";
 export type {
   SelectableOption,
   SelectableOptions,
+  SelectableCancellable,
   SelectableEventMap,
   SelectableMessages,
   SearchConfig,

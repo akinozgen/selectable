@@ -147,6 +147,12 @@ Instance events via `sel.on(type, handler)` — handler receives the payload dir
 | `create` | `{ option: SelectableOption }` | Tag created from free text. |
 | `clear` | `void` | `clear()` / clear button. |
 | `destroy` | `void` | Instance destroyed. |
+| `beforeOpen` | `{ preventDefault(): void; defaultPrevented: boolean }` | **Cancellable.** Before the panel opens — user paths AND public `open()`/`toggle()`. |
+| `beforeClose` | `{ preventDefault(): void; defaultPrevented: boolean }` | **Cancellable.** Before the panel closes — every path EXCEPT `destroy()`/`disable()` teardown. |
+| `beforeChange` | `{ value: string[]; next: string[]; options: SelectableOption[]; nextOptions: SelectableOption[]; preventDefault(); defaultPrevented }` | **Cancellable.** Before a USER-INITIATED selection change (pick, chip removal/Backspace, `clear()`, select-all — batches fire ONE event with the full proposed `next`). `value`/`options` = current, `next`/`nextOptions` = proposed. NOT fired by `setValue()` or native-sync (form reset, external mutations). |
+| `beforeCreate` | `{ label: string; option: SelectableOption; preventDefault(); defaultPrevented }` | **Cancellable.** Before a tag is committed; `option` = the would-be option (from `tags.create` or default). Veto leaves no native `<option>`. |
+
+`preventDefault()` in any `before*` handler aborts the action **silently**: no state change, no follow-up events (no `change`/`open`/`close`/`create`/`clear`, no native `input`/`change`, native select untouched).
 
 **Critical for frameworks:** every selection change also dispatches native bubbling `input` + `change` events **on the native `<select>`** — React `onChange`, Vue `v-model`, Livewire `wire:model`, plain `addEventListener("change")` all work with zero glue.
 
@@ -329,6 +335,28 @@ onBeforeUnmount(() => sel?.destroy());
   Selectable.upgrade(); // and after SPA navigation:
   document.addEventListener("livewire:navigated", () => Selectable.upgrade());
 </script>
+```
+
+### 9. Validation via cancellable before-events
+
+```js
+// Cap the selection at 3 with a custom message (softer than maxSelections —
+// you own the veto and the feedback).
+const sel = new Selectable("#skills", { clearable: true });
+sel.on("beforeChange", (e) => {
+  if (e.next.length > 3) {
+    e.preventDefault(); // aborts silently: no change event, native untouched
+    showToast(`En fazla 3 seçim yapabilirsiniz (denenen: ${e.next.length}).`);
+  }
+});
+// Guard against closing while a required pick is missing:
+sel.on("beforeClose", (e) => {
+  if (sel.value.length === 0) e.preventDefault();
+});
+// Only allow tags matching a pattern:
+sel.on("beforeCreate", (e) => {
+  if (!/^[a-z0-9-]+$/.test(e.option.value)) e.preventDefault();
+});
 ```
 
 ## Gotchas
