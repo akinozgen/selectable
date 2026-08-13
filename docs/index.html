@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selectable - Demo</title>
+    <link rel="stylesheet" href="https://unpkg.com/@akinozgen17/selectablejs/dist/selectable.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+
+        .demo-section {
+            margin-bottom: 40px;
+        }
+
+        .demo-section h2 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .description {
+            color: #666;
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Selectable</h1>
+        <p class="subtitle">A framework-agnostic, zero-dependency select component</p>
+
+        <!-- Basic Example -->
+        <div class="demo-section">
+            <h2>Basic Select</h2>
+            <div class="form-group">
+                <label for="city">Choose a city</label>
+                <select id="city">
+                    <option value="">Select a city...</option>
+                    <option value="34">Istanbul</option>
+                    <option value="06">Ankara</option>
+                    <option value="35">Izmir</option>
+                    <option value="16">Bursa</option>
+                    <option value="41">Kocaeli</option>
+                    <option value="33">Mersin</option>
+                </select>
+                <p class="description">Simple select with clearable option</p>
+            </div>
+        </div>
+
+        <!-- Multiple Select Example -->
+        <div class="demo-section">
+            <h2>Multiple Selection</h2>
+            <div class="form-group">
+                <label for="hobbies">Select your hobbies</label>
+                <select id="hobbies" multiple>
+                    <option value="reading">Reading</option>
+                    <option value="sports">Sports</option>
+                    <option value="music">Music</option>
+                    <option value="gaming">Gaming</option>
+                    <option value="coding">Coding</option>
+                    <option value="travel">Travel</option>
+                </select>
+                <p class="description">Multiple selection with wrapping chips</p>
+            </div>
+        </div>
+
+        <!-- Searchable Example -->
+        <div class="demo-section">
+            <h2>Searchable Select</h2>
+            <div class="form-group">
+                <label for="countries">Search countries</label>
+                <select id="countries">
+                    <option value="">Search or select...</option>
+                    <option value="tr">Turkey</option>
+                    <option value="us">United States</option>
+                    <option value="uk">United Kingdom</option>
+                    <option value="de">Germany</option>
+                    <option value="fr">France</option>
+                    <option value="it">Italy</option>
+                    <option value="es">Spain</option>
+                    <option value="jp">Japan</option>
+                    <option value="cn">China</option>
+                    <option value="br">Brazil</option>
+                </select>
+                <p class="description">Type to search through options</p>
+            </div>
+        </div>
+
+        <!-- Tags Example -->
+        <div class="demo-section">
+            <h2>Tags</h2>
+            <div class="form-group">
+                <label for="tags">Add tags</label>
+                <select id="tags" multiple>
+                    <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="react">React</option>
+                    <option value="vue">Vue</option>
+                </select>
+                <p class="description">Type to create new tags</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Learn more at <a href="https://github.com/akinozgen/selectable" target="_blank">GitHub</a> | <a href="https://www.npmjs.com/package/@akinozgen17/selectablejs" target="_blank">NPM</a></p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@akinozgen17/selectablejs/dist/selectable.global.js"></script>
+    <script>
+        // Basic select
+        new window.Selectable.Selectable("#city", { clearable: true });
+
+        // Multiple selection
+        new window.Selectable.Selectable("#hobbies", {
+            clearable: true,
+            overflow: "wrap"
+        });
+
+        // Searchable
+        new window.Selectable.Selectable("#countries", {
+            search: true,
+            clearable: true
+        });
+
+        // Tags
+        new window.Selectable.Selectable("#tags", {
+            search: true,
+            tags: true,
+            clearable: true
+        });
+    </script>
+</body>
+</html>
