@@ -36,6 +36,12 @@ Search is locale-aware and diacritic-tolerant out of the box — typing `istanbu
 
 <EditableDemo snippet="counter" />
 
+## Select all — with group toggles
+
+`selectAll: true` pins a tri-state *Select all / Deselect all* header row above the options; `{ groups: true }` additionally makes each group header a toggle for its own options. Each toggle applies the whole batch as **one** `change` event, and with an active search query it operates on the filtered matches only.
+
+<EditableDemo snippet="selectAll" />
+
 ## Panel size — `visibleOptions`
 
 Cap the panel at N option rows so long lists scroll instead of stretching — the equivalent of bootstrap-select's `size`.
@@ -48,9 +54,9 @@ When the query matches nothing, a *Create "…"* row appears; created tags becom
 
 <EditableDemo snippet="tags" />
 
-## Remote data — async source
+## Remote data — pagination / infinite scroll
 
-This demo fakes an API with ~400 ms latency over a country list. Debouncing, request cancellation (`AbortController`) and an LRU query cache are built in — type to search.
+This demo fakes a paginated API — 100 members, 20 per page, ~400 ms latency. Return `{ options, hasMore }` from the fetcher and scrolling near the end of the list loads the next page automatically; debouncing, request cancellation (`AbortController`) and a per-page LRU cache are built in. **Open the panel and scroll to the bottom of the list** to watch pages append.
 
 <EditableDemo snippet="remote" />
 
@@ -59,6 +65,24 @@ This demo fakes an API with ~400 ms latency over a country list. Debouncing, req
 Above 50 options, list virtualization turns on automatically: this panel holds 10,000 options but keeps only ~20 nodes in the DOM, scrolling at full frame rate.
 
 <EditableDemo snippet="virtual" />
+
+## Subtext & icons
+
+bootstrap-select markup parity: `data-subtext`, `data-image`, and `data-icon` on native options are promoted to typed fields automatically — a muted second line in the panel, a 20px rounded leading image (or icon-font `<i>`), all rendered XSS-safe via `textContent`. In single mode the trigger shows the selected option's image next to the label.
+
+<EditableDemo snippet="subtext" />
+
+## Cancellable before-events
+
+`beforeOpen`, `beforeClose`, `beforeChange`, and `beforeCreate` fire ahead of their action; calling `e.preventDefault()` aborts it silently — no state change, no follow-up events. Try picking **Forbidden** below.
+
+<EditableDemo snippet="veto" />
+
+## Chained form flow — `next`
+
+Give each control a `next` target and every pick that closes a panel opens the following one — with the guarantee that `change` handlers run first, so dependent options are loaded before the next panel appears. Pick a province and follow the chain (`autofocus: true` can start the flow on page load; it's off here on purpose).
+
+<EditableDemo snippet="chain" />
 
 ## Sizes and density
 

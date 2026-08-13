@@ -1,4 +1,8 @@
 import { defineConfig } from "vitepress";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const { version } = require("../../package.json");
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -76,7 +80,7 @@ export default defineConfig({
       { text: "Guide", link: "/guide/getting-started" },
       { text: "Reference", link: "/guide/configuration" },
       { text: "Playground", link: "/playground" },
-      { text: "v0.2.0", link: "https://www.npmjs.com/package/@akinozgen17/selectablejs" },
+      { text: `v${version}`, link: "https://www.npmjs.com/package/@akinozgen17/selectablejs" },
     ],
 
     sidebar: [

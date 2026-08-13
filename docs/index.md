@@ -37,7 +37,7 @@ features:
     details: Automatic list virtualization above 50 options — 10,000+ options scroll at full frame rate with ~20 nodes in the DOM.
   - icon: 🔍
     title: Search, tags, remote data
-    details: Diacritic-tolerant search, free-text tag creation, and async sources with debouncing, request cancellation, and an LRU cache built in.
+    details: Diacritic-tolerant search, free-text tag creation, and async sources with debouncing, request cancellation, paged infinite scroll, and an LRU cache built in.
   - icon: 🧩
     title: Framework-friendly
     details: Native change/input events fire on the original select — React onChange, Vue v-model, Alpine, and Livewire wire:model work without adapters.

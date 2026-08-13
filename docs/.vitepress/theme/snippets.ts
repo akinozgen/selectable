@@ -124,33 +124,149 @@ new Selectable("#skills", {
   },
 
   remote: {
-    html: `<select id="country"></select>`,
-    js: `// A fake API: ~400 ms latency over a country list.
-const COUNTRIES = [
-  "Argentina", "Australia", "Brazil", "Canada", "Denmark", "France",
-  "Germany", "India", "Japan", "Mexico", "Netherlands", "Norway",
-  "Portugal", "Spain", "Sweden", "Türkiye", "United Kingdom", "United States",
-];
+    html: `<select id="members"></select>`,
+    js: `// Fake paginated API: 100 members, 20 per page, ~400 ms latency.
+const MEMBERS = Array.from({ length: 100 }, (_, i) => ({
+  value: String(i + 1),
+  label: \`Member #\${String(i + 1).padStart(3, "0")}\`,
+}));
+const PAGE_SIZE = 20;
 
-const fakeApi = (query) =>
-  new Promise((resolve) =>
-    setTimeout(() => {
-      const q = query.trim().toLowerCase();
-      resolve(COUNTRIES.filter((c) => c.toLowerCase().includes(q)));
-    }, 400),
-  );
-
-new Selectable("#country", {
-  source: asyncSource(async (query) => {
-    const names = await fakeApi(query); // swap for fetch(\`/api/…?q=\${query}\`, { signal })
-    return names.map((name) => ({
-      value: name.toLowerCase().replace(/\\s+/g, "-"),
-      label: name,
-    }));
+new Selectable("#members", {
+  source: asyncSource(async (query, { page }) => {
+    // in real code: fetch(\`/api/members?q=\${query}&page=\${page}\`, { signal })
+    await new Promise((r) => setTimeout(r, 400));
+    const q = query.trim().toLowerCase();
+    const hits = MEMBERS.filter((m) => m.label.toLowerCase().includes(q));
+    const start = page * PAGE_SIZE;
+    return {
+      options: hits.slice(start, start + PAGE_SIZE),
+      hasMore: start + PAGE_SIZE < hits.length, // ← enables infinite scroll
+    };
   }),
-  placeholder: "Search countries…",
+  placeholder: "Search members…",
   clearable: true,
 });`,
+  },
+
+  selectAll: {
+    html: `<select id="cities" multiple>
+  <optgroup label="Marmara">
+    <option value="34">Istanbul</option>
+    <option value="16">Bursa</option>
+    <option value="41">Kocaeli</option>
+  </optgroup>
+  <optgroup label="Aegean">
+    <option value="35">Izmir</option>
+    <option value="09">Aydın</option>
+  </optgroup>
+  <optgroup label="Central Anatolia">
+    <option value="06">Ankara</option>
+    <option value="42">Konya</option>
+  </optgroup>
+</select>`,
+    js: `new Selectable("#cities", {
+  selectAll: { groups: true }, // \`true\` = header row only; groups adds per-group toggles
+  search: true,                // with a query, "all" means the filtered matches
+  placeholder: "Pick cities…",
+  clearable: true,
+});`,
+  },
+
+  subtext: {
+    html: `<!-- bootstrap-select markup parity: data-subtext / data-image / data-icon
+     on native options are promoted to typed fields automatically -->
+<select id="member">
+  <option value="">Choose a member…</option>
+  <option value="ada"
+          data-image="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' fill='%233d63dd'/%3E%3Ccircle cx='10' cy='8' r='3.5' fill='%23fff'/%3E%3Cpath d='M3.5 18a6.5 6.5 0 0113 0z' fill='%23fff'/%3E%3C/svg%3E"
+          data-subtext="ada@example.com — image and subtext">Ada Lovelace</option>
+  <option value="grace"
+          data-image="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect width='20' height='20' fill='%230e9f6e'/%3E%3Ccircle cx='10' cy='8' r='3.5' fill='%23fff'/%3E%3Cpath d='M3.5 18a6.5 6.5 0 0113 0z' fill='%23fff'/%3E%3C/svg%3E">Grace Hopper (image only)</option>
+  <option value="alan" data-subtext="alan@example.com">Alan Turing</option>
+  <option value="edsger" data-subtext="edsger@example.com">Edsger Dijkstra</option>
+</select>`,
+    js: `// No extra config needed — data-subtext renders a muted second line
+// in the panel, data-image a 20px rounded leading image (data-icon takes
+// an icon-font class string, e.g. "fa fa-user").
+new Selectable("#member", { clearable: true });`,
+  },
+
+  veto: {
+    html: `<select id="choice">
+  <option value="">Pick anything but Forbidden…</option>
+  <option value="alpha">Alpha</option>
+  <option value="forbidden">Forbidden (vetoed)</option>
+  <option value="beta">Beta</option>
+</select>`,
+    js: `const sel = new Selectable("#choice");
+
+// before* events fire ahead of the action; preventDefault() aborts it
+// silently — no change events, native select untouched.
+sel.on("beforeChange", (e) => {
+  // e.value/e.options = current selection; e.next/e.nextOptions = proposed
+  if (e.next.includes("forbidden")) e.preventDefault();
+});
+
+// Same recipe gates opens/closes/tag creation:
+// sel.on("beforeClose", (e) => { if (formIsDirty) e.preventDefault(); });`,
+  },
+
+  chain: {
+    html: `<div style="display: grid; gap: 12px;">
+  <select id="chain-province">
+    <option value="">Choose a province…</option>
+    <option value="34">Istanbul</option>
+    <option value="06">Ankara</option>
+    <option value="35">Izmir</option>
+  </select>
+  <select id="chain-district">
+    <option value="">Choose a district…</option>
+  </select>
+  <select id="chain-neighborhood">
+    <option value="">Choose a neighborhood…</option>
+  </select>
+</div>`,
+    js: `const DISTRICTS = {
+  "34": [
+    { value: "kadikoy", label: "Kadıköy" },
+    { value: "besiktas", label: "Beşiktaş" },
+    { value: "uskudar", label: "Üsküdar" },
+  ],
+  "06": [
+    { value: "cankaya", label: "Çankaya" },
+    { value: "kecioren", label: "Keçiören" },
+    { value: "mamak", label: "Mamak" },
+  ],
+  "35": [
+    { value: "konak", label: "Konak" },
+    { value: "bornova", label: "Bornova" },
+    { value: "karsiyaka", label: "Karşıyaka" },
+  ],
+};
+
+const province = new Selectable("#chain-province", { next: "#chain-district" });
+const district = new Selectable("#chain-district", { next: "#chain-neighborhood" });
+const neighborhood = new Selectable("#chain-neighborhood"); // terminal — no next
+
+// Order guarantee: change handlers run BEFORE the next panel opens,
+// so the district list is already populated when its panel appears.
+province.on("change", ({ value }) => {
+  district.setValue([], { silent: true });
+  neighborhood.setValue([], { silent: true });
+  neighborhood.setOptions([]);
+  district.setOptions(DISTRICTS[value[0]] ?? []);
+});
+district.on("change", ({ value, options }) => {
+  neighborhood.setValue([], { silent: true });
+  neighborhood.setOptions([1, 2, 3].map((n) => ({
+    value: \`\${value[0]}-n\${n}\`,
+    label: \`\${options[0].label} Neighborhood \${n}\`,
+  })));
+});
+
+// Tip: \`autofocus: true\` on the first select starts the flow on page
+// load — left off here so this docs page doesn't steal your keyboard.`,
   },
 
   virtual: {
