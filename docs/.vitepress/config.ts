@@ -1,4 +1,19 @@
 import { defineConfig } from "vitepress";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { resolve } from "node:path";
+
+const SITE = "https://akinozgen.github.io/selectable";
+const GUIDES = [
+  "getting-started",
+  "configuration",
+  "theming",
+  "anatomy",
+  "migrating-from-select2",
+  "migrating-from-bootstrap-select",
+] as const;
+
+const stripFrontmatter = (md: string): string =>
+  md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "");
 
 export default defineConfig({
   lang: "en-US",
@@ -9,6 +24,52 @@ export default defineConfig({
 
   // Internal working documents — gitignored locally, must never reach the built site.
   srcExclude: ["research/**", "KARARLAR.md", "ANATOMI.md"],
+
+  // LLM erişimi: ham markdown uçları (llms.txt konvansiyonu).
+  buildEnd(siteConfig) {
+    const src = siteConfig.srcDir;
+    const out = siteConfig.outDir;
+
+    const cheat = stripFrontmatter(readFileSync(resolve(src, "llm.md"), "utf8"));
+    writeFileSync(resolve(out, "llms.md"), cheat);
+
+    const guideParts: string[] = [];
+    mkdirSync(resolve(out, "guide"), { recursive: true });
+    for (const g of GUIDES) {
+      const raw = stripFrontmatter(
+        readFileSync(resolve(src, `guide/${g}.md`), "utf8"),
+      );
+      writeFileSync(resolve(out, `guide/${g}.md`), raw);
+      guideParts.push(raw);
+    }
+    writeFileSync(
+      resolve(out, "llms-full.txt"),
+      [cheat, ...guideParts].join("\n\n---\n\n"),
+    );
+
+    writeFileSync(
+      resolve(out, "llms.txt"),
+      [
+        "# selectablejs",
+        "",
+        "> Framework-agnostic, zero-dependency select component. Flexible like select2, featureful like bootstrap-select; unbreakable rendering (top-layer Popover API) and styling (component-scoped --sl-* tokens). npm: @akinozgen17/selectablejs",
+        "",
+        "## Primary",
+        "",
+        `- [LLM cheat sheet](${SITE}/llms.md): complete API surface — options, methods, events, CSS tokens, recipes, gotchas. Start here.`,
+        `- [Everything as one file](${SITE}/llms-full.txt): cheat sheet + all guides concatenated.`,
+        "",
+        "## Guides (raw markdown)",
+        "",
+        ...GUIDES.map((g) => `- [${g}](${SITE}/guide/${g}.md)`),
+        "",
+        "## Optional",
+        "",
+        `- [Interactive docs site](${SITE}/): human-oriented HTML docs with live demos.`,
+        "",
+      ].join("\n"),
+    );
+  },
 
   themeConfig: {
     nav: [

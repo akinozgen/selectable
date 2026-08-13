@@ -2,11 +2,11 @@
 title: LLM Cheat Sheet
 ---
 
-# Selectable v0.1.0 — AI Agent Cheat Sheet
+# Selectable — AI Agent Cheat Sheet
 
 > The raw Markdown of this page ships inside the npm package (`docs/llm.md`) — point your AI agent at it directly.
 
-<!-- Single-file integration reference. Verified against src/ at v0.1.0. -->
+<!-- Single-file integration reference, kept in sync with src/. -->
 
 ## What it is
 
@@ -342,4 +342,4 @@ onBeforeUnmount(() => sel?.destroy());
 
 ## Version & compatibility
 
-Generated for **v0.1.0** (pre-release; API may change until 1.0). Baseline: browsers with the Popover API (Chrome/Edge 114+, Firefox 125+, Safari 17+); older evergreen browsers degrade to the body-portal fallback automatically. `color-mix()` used with static fallbacks. Docs: `docs/guide/` (guides), `docs/guide/anatomy.md` (DOM contract), `llms.txt` (index).
+Pre-release (API may change until 1.0). Baseline: browsers with the Popover API (Chrome/Edge 114+, Firefox 125+, Safari 17+); older evergreen browsers degrade to the body-portal fallback automatically. `color-mix()` used with static fallbacks. Docs: `docs/guide/` (guides), `docs/guide/anatomy.md` (DOM contract), `llms.txt` (index).
