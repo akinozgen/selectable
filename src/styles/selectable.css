@@ -1,6 +1,6 @@
 /* ============================================================
    Selectable — Bileşen Stilleri v0.1
-   Sözleşme: docs/kilavuz/anatomi.md
+   Sözleşme: docs/guide/anatomy.md
    Kural: @layer YOK; tek/çift seviye seçici, özgüllük (0,1,0)–(0,2,0);
    durumlar attribute ile; mantıksal özellikler (RTL güvenli).
    ============================================================ */

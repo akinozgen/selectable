@@ -4,11 +4,10 @@
 > A modern replacement for select2 and bootstrap-select: enhances a native
 > `<select>` in place, opens its panel in the browser top layer (Popover API),
 > and isolates all styling under `--sl-*` tokens so host CSS never breaks it.
-> Vanilla TypeScript; ESM/CJS/IIFE + a single CSS file. Version: 0.1.0
-> (pre-release, not yet on npm).
+> Vanilla TypeScript; ESM/CJS/IIFE + a single CSS file. Version: 0.1.0.
 
 Key facts:
-- Install: `npm install @akinozgen17/selectablejs` (soon) + `import "@akinozgen17/selectablejs/css"`
+- Install: `npm install @akinozgen17/selectablejs` + `import "@akinozgen17/selectablejs/css"`
 - Init: `new Selectable(selectElement | selector, options)` — wraps the existing `<select>` (progressive enhancement); or `Selectable.upgrade()` for all `select[data-selectable]`
 - The native select stays in the form: submit, FormData, `form.reset()`, and framework bindings (native `change`/`input` are dispatched) keep working
 - All CSS variables are `--sl-` prefixed and component-scoped (no `:root` pollution); classes live under `.sl-*`
@@ -17,13 +16,13 @@ Key facts:
 ## Docs
 
 - [AI agent cheat sheet (single file, recommended first fetch)](docs/llm.md): complete options/methods/events/token tables + 8 copy-paste recipes + gotchas
-- [Getting started (Turkish)](docs/kilavuz/baslangic.md): install, enhance a native select, progressive enhancement
-- [Configuration reference (Turkish)](docs/kilavuz/yapilandirma.md): every option with type, default, and example
-- [Theming (Turkish)](docs/kilavuz/temalama.md): token system, `--sl-accent` one-line branding, dark mode, size/density
-- [DOM anatomy (Turkish)](docs/kilavuz/anatomi.md): class list, data-attributes, and state selectors custom CSS can rely on
-- [README (Turkish)](README.md): pitch, quick start, feature list
+- [Getting started](docs/guide/getting-started.md): install, enhance a native select, progressive enhancement
+- [Configuration reference](docs/guide/configuration.md): every option with type, default, and example
+- [Theming](docs/guide/theming.md): token system, `--sl-accent` one-line branding, dark mode, size/density
+- [DOM anatomy](docs/guide/anatomy.md): class list, data-attributes, and state selectors custom CSS can rely on
+- [README](README.md): pitch, quick start, feature list
 
 ## Migration
 
-- [From select2 (Turkish)](docs/kilavuz/select2-den-gecis.md): config/event/method mapping tables, behavioral differences
-- [From bootstrap-select (Turkish)](docs/kilavuz/bootstrap-select-ten-gecis.md): `selectpicker` habits mapped to Selectable
+- [From select2](docs/guide/migrating-from-select2.md): config/event/method mapping tables, behavioral differences
+- [From bootstrap-select](docs/guide/migrating-from-bootstrap-select.md): `selectpicker` habits mapped to Selectable

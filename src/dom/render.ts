@@ -36,7 +36,7 @@ export interface BuildConfig {
   messages: SelectableMessages;
 }
 
-/** Builds the static skeleton per docs/kilavuz/anatomi.md and wraps the native select. */
+/** Builds the static skeleton per docs/guide/anatomy.md and wraps the native select. */
 export function buildSkeleton(
   select: HTMLSelectElement,
   cfg: BuildConfig,

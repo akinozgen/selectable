@@ -1,0 +1,301 @@
+# Configuration Reference
+
+All options are passed as the second argument of
+`new Selectable(target, options)`. The target is an `HTMLSelectElement` or a
+CSS selector. No option is required — everything you omit is derived from the
+native `<select>`.
+
+```js
+import { Selectable } from "@akinozgen17/selectablejs";
+const sel = new Selectable("#city", { /* options */ });
+```
+
+## Summary table
+
+| Option | Type | Default | What it does |
+|---|---|---|---|
+| [`source`](#source) | `SelectableOption[] \| AsyncDataSource` | read from native `<select>` | Data source |
+| [`multiple`](#multiple) | `boolean` | `select.multiple` | Multiple selection |
+| [`disabled`](#disabled) | `boolean` | `select.disabled` | Disabled state |
+| [`placeholder`](#placeholder) | `string` | first empty-value option's label, else i18n | Placeholder text |
+| [`search`](#search) | `boolean \| SearchConfig` | automatic (see below) | In-panel search |
+| [`clearable`](#clearable) | `boolean` | `false` | Clear (✕) button |
+| [`overflow`](#overflow) | `"wrap" \| "counter"` | `"wrap"` | Chip overflow behavior |
+| [`closeOnSelect`](#closeonselect) | `boolean` | `!multiple` | Close after selecting |
+| [`selectOnTab`](#selectontab) | `boolean` | `false` | Tab commits the active option |
+| [`maxSelections`](#maxselections) | `number` | `Infinity` | Multi-select cap |
+| [`tags`](#tags) | `boolean \| TagsConfig` | `false` | Create options from free text |
+| [`size`](#size--density) | `"sm" \| "md" \| "lg"` | `"md"` | Control size |
+| [`density`](#size--density) | `"compact" \| "normal" \| "comfortable"` | `"normal"` | Row density |
+| [`theme`](#theme) | `"light" \| "dark" \| "auto" \| "inherit"` | `"auto"` | Theme mode |
+| [`positioning`](#positioning) | `PositioningConfig` | `{}` | Panel placement |
+| [`render`](#render) | `RenderConfig` | built-in | Custom templates |
+| [`i18n`](#i18n) | `Partial<SelectableMessages>` | English | Message dictionary |
+| [`virtual`](#virtual) | `boolean \| { overscan? }` | auto above 100 options | List virtualization |
+
+The option object type (`SelectableOption`):
+
+```ts
+{ value: string; label: string; disabled?: boolean; group?: string; data?: T }
+```
+
+`group` is a plain-text group heading; native `<optgroup>`s are flattened into
+this field. Native `<option data-*>` attributes are copied into `data`.
+
+---
+
+## `source`
+
+The data source. Three ways:
+
+**1. From the native select (default)** — pass nothing; `<option>`s are read
+and kept in sync automatically if they change later.
+
+**2. As an array:**
+
+```js
+new Selectable("#city", {
+  source: [
+    { value: "34", label: "Istanbul", group: "Marmara" },
+    { value: "06", label: "Ankara", group: "Central Anatolia" },
+    { value: "42", label: "Konya", group: "Central Anatolia", disabled: true },
+  ],
+});
+```
+
+**3. Remote data — `asyncSource(fetcher)`:**
+
+```js
+import { Selectable, asyncSource } from "@akinozgen17/selectablejs";
+
+new Selectable("#user", {
+  source: asyncSource(
+    async (query, { signal }) => {
+      const res = await fetch(`/api/users?q=${encodeURIComponent(query)}`, { signal });
+      if (!res.ok) throw new Error(res.statusText);
+      return (await res.json()).map((u) => ({ value: String(u.id), label: u.name }));
+    },
+    { minQueryLength: 2, cacheSize: 50 },
+  ),
+  search: { debounceMs: 300 },
+});
+```
+
+In async mode the server does the filtering; the core manages debouncing
+(`search.debounceMs`, default 250 ms), cancelling stale requests
+(AbortController), and an LRU query cache (`cacheSize`, default 50; `0`
+disables it). Selected async values are appended to the native select as real
+`<option>` elements so the form can submit them. If a load fails, an `error`
+event is emitted and the failure is announced to screen readers.
+
+## `multiple`
+
+The markup decides the default: `<select multiple>` means multi-mode. In
+multi-mode, selections appear as chips on the trigger; the chip's ✕ is a
+pointer target only — on the keyboard, `Backspace` removes the last chip.
+
+## `disabled`
+
+`true` starts the component disabled. Change it later with `sel.enable()` /
+`sel.disable()`; the native `select.disabled` is kept in sync.
+
+## `placeholder`
+
+Priority order: this option → the text of the first `<option>` with an empty
+`value` → the i18n `placeholder` message. The empty-value first option is the
+"placeholder convention": it is not shown as a real choice in the list.
+
+## `search`
+
+The in-panel search box. The default is **automatic**: it turns on when there
+is an async source, when `tags` is enabled, or when there are more than 8 real
+options. Force it with `true`/`false`, or tune it with an object:
+
+```js
+new Selectable("#country", {
+  search: {
+    minQueryLength: 2,  // queries shorter than this don't filter (default 0)
+    debounceMs: 300,    // delays ASYNC loads only (default 250)
+    filter: (option, query) =>
+      option.label.toLowerCase().startsWith(query.toLowerCase()),
+  },
+});
+```
+
+The default filter is locale-aware and diacritic-tolerant: it ignores case and
+combining accents (e.g. "istanbul" matches "İstanbul", Turkish dotless `ı`
+folds to `i`). Local filtering is instantaneous; `debounceMs` only applies to
+async sources. On touch devices the search input is deliberately not
+auto-focused, so the virtual keyboard doesn't pop open uninvited.
+
+## `clearable`
+
+When `true`, an ✕ appears on the trigger while there is a selection and clears
+all of it. Clearing emits `clear` (and `change`). The keyboard equivalent in
+multi-mode is removing chips one by one with `Backspace`.
+
+## `overflow`
+
+Chip overflow in multi-mode: `"wrap"` (default) wraps chips onto new lines;
+`"counter"` collapses the ones that don't fit into a `+N` counter chip.
+
+## `closeOnSelect`
+
+Default: `true` in single mode, `false` in multiple mode (the panel stays open
+so you can keep picking). Set `true` to close after each pick in multi-mode.
+
+## `selectOnTab`
+
+When `true`, `Tab` commits the active option before leaving the panel (a
+fast-form-entry habit). Default `false`: `Tab` dismisses without selecting.
+
+## `maxSelections`
+
+Upper bound for multi-mode. At the limit, further picks are refused and the
+condition is announced to screen readers (the `i18n.maxReached` message).
+
+## `tags`
+
+Free-text entry: when the user's query doesn't match an existing option, a
+*Create "…"* row appears at the end of the list. `true` is enough; to
+customize the produced option:
+
+```js
+const sel = new Selectable("#labels", {
+  tags: {
+    create: (label) => ({ value: label.trim().toLowerCase(), label: label.trim() }),
+  },
+});
+sel.on("create", ({ option }) => console.log("created:", option));
+```
+
+Created tags are appended to the native select as `<option data-sl-created>`
+elements — they are included in form submissions. When the query matches
+**zero** options, the create row is auto-activated, so a bare `Enter` creates
+the tag immediately. Tagging requires search; enabling `tags` turns search on
+automatically (if you force `search: false`, the create row never appears).
+
+## `size` / `density`
+
+Two independent axes; both only override `--sl-*` tokens (details:
+[theming.md](theming.md)):
+
+- `size`: `"sm"` (32px) / `"md"` (36px, default) / `"lg"` (44px — the WCAG
+  touch-target size) — control height, font size, radius.
+- `density`: `"compact"` / `"normal"` / `"comfortable"` — option row height.
+  On touch devices, comfortable is applied automatically unless a density is
+  set explicitly.
+
+## `theme`
+
+- `"light"` / `"dark"`: pins the theme for this instance (writes
+  `data-sl-theme` on the root element).
+- `"auto"` (default) / `"inherit"`: no attribute is written; the theme comes
+  from the nearest `[data-sl-theme]` ancestor, or failing that from
+  `prefers-color-scheme`. Details: [theming.md](theming.md).
+
+## `positioning`
+
+Panel placement. **Note:** there is no `zIndex` or `dropdownParent` option —
+the panel opens in the top layer, so neither is needed.
+
+```js
+new Selectable("#city", {
+  positioning: {
+    strategy: "auto",   // "popover" | "portal" | "auto"; "portal" forces the fallback path
+    placement: "auto",  // "bottom-start" | "top-start" | "auto" (prefers bottom, flips when needed)
+    offset: 6,          // trigger↔panel gap (px)
+    sameWidth: true,    // panel min-width = trigger width
+  },
+});
+```
+
+While the panel is open, scrolling, resizing, and virtual-keyboard changes are
+observed, and the position is updated at most once per frame.
+
+## `render`
+
+Custom templates; return a `Node` or a `string` (strings are rendered as
+**text** — the XSS-safe default; produce a `Node` if you want HTML):
+
+```js
+new Selectable("#member", {
+  render: {
+    option: (o, { selected, active }) => {
+      const el = document.createElement("div");
+      el.textContent = o.label;
+      if (o.data?.email) {
+        const sub = document.createElement("small");
+        sub.textContent = ` ${o.data.email}`;
+        el.appendChild(sub);
+      }
+      return el;
+    },
+    selection: (selected) => selected.map((o) => o.label).join(", "),
+    noResults: (query) => `No results for "${query}"`,
+  },
+});
+```
+
+## `i18n`
+
+Every user-visible string comes from the message dictionary. A Turkish pack
+ships with the library:
+
+```js
+import { Selectable, tr } from "@akinozgen17/selectablejs";
+new Selectable("#city", { i18n: tr });
+// or override selectively:
+new Selectable("#city", { i18n: { noResults: "Nothing found", placeholder: "Pick one…" } });
+```
+
+Message keys: `placeholder`, `noResults`, `loading`, `searchPlaceholder`,
+`loadError` (strings) and `removeItem(label)`, `selectedCount(n)`,
+`itemSelected(label, total)`, `itemDeselected(label, total)`,
+`resultsFound(n)`, `maxReached(max)`, `createOption(label)` (functions — most
+of these are screen-reader announcements).
+
+## `virtual`
+
+List virtualization kicks in **automatically** above 100 options; `false`
+disables it, and passing an object (e.g. `{ overscan: 10 }`) removes the
+threshold and keeps it always on. `overscan` is the number of rows kept
+rendered outside the visible window (default 6). Row height is measured
+automatically.
+
+---
+
+## Methods (summary)
+
+| Method | Returns | Description |
+|---|---|---|
+| `value` (getter) | `string[]` | Values in selection order (an array even in single mode) |
+| `setValue(v, { silent? })` | `void` | Writes the selection; `silent: true` emits no events |
+| `getSelectedOptions()` | `SelectableOption[]` | Selected option objects |
+| `isOpen` (getter) | `boolean` | Whether the panel is open |
+| `open()` / `close()` / `toggle()` | `void` | Panel control |
+| `setOptions(options)` | `void` | Replaces the option set (selection preserved) |
+| `refresh()` | `void` | Re-reads from the native select (rarely needed) |
+| `search(query)` | `void` | Programmatic search |
+| `clear()` | `void` | Empties the selection |
+| `enable()` / `disable()` | `void` | Disabled state |
+| `destroy()` | `void` | Full teardown; restores the native select |
+| `on(type, handler)` | `() => void` | Adds a listener, returns an unsubscribe function |
+| `off(type, handler)` | `void` | Removes a listener |
+
+## Events (summary)
+
+| Event | Payload | When |
+|---|---|---|
+| `change` | `{ value: string[], options }` | Selection changed |
+| `open` / `close` | — | Panel opened / closed |
+| `search` | `{ query }` | Query changed |
+| `load` | `{ query, count }` | Async load finished |
+| `error` | `{ error }` | Async load failed |
+| `create` | `{ option }` | Tag created |
+| `clear` | — | Selection cleared |
+| `destroy` | — | Instance destroyed |
+
+In addition, every selection change fires bubbling native `input` + `change`
+events on the `<select>` — the events form libraries and frameworks listen
+for.

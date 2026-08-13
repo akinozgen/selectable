@@ -9,7 +9,7 @@ Framework-agnostic, zero-dependency select/dropdown that **enhances an existing 
 ## Install
 
 ```bash
-npm install @akinozgen17/selectablejs   # not yet published — until then: npm install <git-url-or-local-path>
+npm install @akinozgen17/selectablejs
 ```
 
 ```js
@@ -20,8 +20,8 @@ import "@akinozgen17/selectablejs/css"; // REQUIRED — without it the component
 CDN / no-bundler (IIFE, exposes a **namespace** `window.Selectable`):
 
 ```html
-<link rel="stylesheet" href="dist/selectable.css">
-<script src="dist/selectable.global.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@akinozgen17/selectablejs/dist/selectable.css">
+<script src="https://unpkg.com/@akinozgen17/selectablejs/dist/selectable.global.js"></script>
 <script>
   const sel = new Selectable.Selectable("#city"); // note: namespace.Class
 </script>
@@ -182,7 +182,7 @@ Dark theme: set `data-sl-theme="dark"` on any ancestor (or the instance via `the
 ```text
 .sl [data-state=open|closed] [data-size] [data-density] [data-sl-theme] [data-multiple] [data-disabled]
 ├─ select.sl-native            (original select — form truth, visually clipped)
-├─ .sl-trigger [tabindex=0]    (combobox; contains:)
+├─ .sl-trigger [tabindex=0]    (role=combobox; role=button in search mode — the search input is the combobox)
 │  └─ .sl-value → .sl-placeholder | text | .sl-chip (.sl-chip-label + .sl-chip-remove) | .sl-chip-counter "+N"
 │     + .sl-clear, .sl-chevron, .sl-spinner
 ├─ .sl-panel [popover=manual] [data-placement=bottom|top]
@@ -194,7 +194,7 @@ Dark theme: set `data-sl-theme="dark"` on any ancestor (or the instance via `the
 .sl-portal                     (body-level root, only in non-Popover fallback)
 ```
 
-State styling uses attributes (`[data-state="open"]`, `[aria-selected="true"]`, `[data-active]`, `[aria-disabled]`), not extra classes.
+State styling uses attributes (`[data-state="open"]`, `[aria-selected="true"]`, `[data-active]`, `[aria-disabled]`), not extra classes. The trigger/search input get `aria-labelledby` wired from the native select's `<label>` (or its `aria-label`/`aria-labelledby`); clicking the label focuses the trigger. `.sl-chip-remove` and `.sl-clear` are pointer-only `<span>`s (`aria-hidden`, never focusable) — the keyboard path is `Backspace`.
 
 ## Recipes
 
@@ -236,6 +236,7 @@ const sel = new Selectable("#labels", {
 });
 sel.on("create", ({ option }) => console.log("created", option.value));
 // Created tags are appended to the native <select> as <option data-sl-created> → form submits them.
+// Zero matches → the create row is auto-activated, so a bare Enter creates the tag.
 ```
 
 ### 5. Remote data (async)
@@ -315,7 +316,8 @@ onBeforeUnmount(() => sel?.destroy());
 - **IIFE global is a namespace**: `window.Selectable.Selectable` is the class; `Selectable.asyncSource`, `Selectable.tr` etc. sit beside it.
 - **Livewire/htmx DOM morph**: wrap in `wire:ignore` (or re-run `Selectable.upgrade()` after swaps). External mutations to the native select are otherwise picked up automatically via MutationObserver — manual `refresh()` is almost never needed.
 - **`form.reset()` is supported natively** — selection snaps back to the markup's `selected` attributes, no code needed.
-- **Created tags / async-selected values become real native `<option>`s** (marked `data-sl-created`) so the form submits them.
+- **Created tags / async-selected values become real native `<option>`s** (marked `data-sl-created`) so the form submits them. With zero search matches the create row is auto-activated — bare `Enter` creates the tag.
+- **Native `<label>`s keep working**: the trigger inherits the accessible name (`aria-labelledby`) and clicking the label focuses the trigger — don't add duplicate `aria-label`s.
 - **`search.debounceMs` only affects async sources**; local filtering is synchronous.
 - **`setValue(v, { silent: true })`** updates state without emitting `change` (instance or native) — use for programmatic sync loops.
 - **`value` is always `string[]`**, even in single mode (`value[0]` for the scalar).
@@ -323,4 +325,4 @@ onBeforeUnmount(() => sel?.destroy());
 
 ## Version & compatibility
 
-Generated for **v0.1.0** (pre-release; API may change until 1.0). Baseline: browsers with the Popover API (Chrome/Edge 114+, Firefox 125+, Safari 17+); older evergreen browsers degrade to the body-portal fallback automatically. `color-mix()` used with static fallbacks. Docs: `docs/kilavuz/` (Turkish guides), `docs/kilavuz/anatomi.md` (DOM contract), `llms.txt` (index).
+Generated for **v0.1.0** (pre-release; API may change until 1.0). Baseline: browsers with the Popover API (Chrome/Edge 114+, Firefox 125+, Safari 17+); older evergreen browsers degrade to the body-portal fallback automatically. `color-mix()` used with static fallbacks. Docs: `docs/guide/` (guides), `docs/guide/anatomy.md` (DOM contract), `llms.txt` (index).

@@ -136,7 +136,7 @@ Everything is driven by component-scoped custom properties. Rebranding is one li
 
 - **Dark mode:** follows `prefers-color-scheme` automatically; force with `data-sl-theme="dark"` (or `"light"`) on the component or any ancestor.
 - **Sizes:** `size: "sm" | "md" | "lg"`, density: `"compact" | "normal" | "comfortable"`.
-- Full token reference: [docs/kilavuz/temalama.md](docs/kilavuz/temalama.md).
+- Full token reference: [docs/guide/theming.md](docs/guide/theming.md).
 
 ## Framework integration
 
@@ -157,15 +157,13 @@ Baseline is the Popover API (Chrome/Edge 114+, Firefox 125+, Safari 17+). Older 
 
 | Topic | |
 |---|---|
-| Getting started | [docs/kilavuz/baslangic.md](docs/kilavuz/baslangic.md) |
-| All options | [docs/kilavuz/yapilandirma.md](docs/kilavuz/yapilandirma.md) |
-| Theming & tokens | [docs/kilavuz/temalama.md](docs/kilavuz/temalama.md) |
-| Migrating from select2 | [docs/kilavuz/select2-den-gecis.md](docs/kilavuz/select2-den-gecis.md) |
-| Migrating from bootstrap-select | [docs/kilavuz/bootstrap-select-ten-gecis.md](docs/kilavuz/bootstrap-select-ten-gecis.md) |
-| DOM anatomy (classes & attributes) | [docs/kilavuz/anatomi.md](docs/kilavuz/anatomi.md) |
+| Getting started | [docs/guide/getting-started.md](docs/guide/getting-started.md) |
+| All options | [docs/guide/configuration.md](docs/guide/configuration.md) |
+| Theming & tokens | [docs/guide/theming.md](docs/guide/theming.md) |
+| Migrating from select2 | [docs/guide/migrating-from-select2.md](docs/guide/migrating-from-select2.md) |
+| Migrating from bootstrap-select | [docs/guide/migrating-from-bootstrap-select.md](docs/guide/migrating-from-bootstrap-select.md) |
+| DOM anatomy (classes & attributes) | [docs/guide/anatomy.md](docs/guide/anatomy.md) |
 | LLM / AI-agent cheat sheet | [docs/llm.md](docs/llm.md) — ships in the npm package; see also [llms.txt](llms.txt) |
-
-Guides are currently in Turkish; the LLM cheat sheet is in English and covers the complete API surface.
 
 ## Development
 
