@@ -11,9 +11,9 @@ test.describe("#tagged — tagging", () => {
     await openViaClick(w);
     await expect(w.searchInput).toBeFocused();
 
-    await w.searchInput.fill("pazarlama");
+    await w.searchInput.fill("kırmızı ot");
     await expect(w.createRow).toBeVisible();
-    await expect(w.createRow).toHaveText('"pazarlama" oluştur');
+    await expect(w.createRow).toHaveText('"kırmızı ot" oluştur');
 
     // LIBRARY BUG (documented in report): when the query matches nothing,
     // activeIndex stays -1 and the create row is NOT auto-activated, so a
@@ -24,13 +24,13 @@ test.describe("#tagged — tagging", () => {
     await w.searchInput.press("Enter");
 
     // chip appears, native gains a created+selected option
-    await expect(w.chips.filter({ hasText: "pazarlama" })).toHaveCount(1);
+    await expect(w.chips.filter({ hasText: "kırmızı ot" })).toHaveCount(1);
     const created = await w.native.evaluate((el) => {
       const o = el.querySelector<HTMLOptionElement>("option[data-sl-created]");
       return o ? { value: o.value, selected: o.selected } : null;
     });
-    expect(created).toEqual({ value: "pazarlama", selected: true });
-    expect(await nativeSelected(page, "tagged")).toEqual(["oneri", "pazarlama"]);
+    expect(created).toEqual({ value: "kırmızı ot", selected: true });
+    expect(await nativeSelected(page, "tagged")).toEqual(["yesil-ot", "kırmızı ot"]);
     // the query is reset after creation
     await expect(w.searchInput).toHaveValue("");
   });
@@ -40,23 +40,29 @@ test.describe("#tagged — tagging", () => {
     // becomes the active row and Enter creates directly.
     const w = widget(page, "tagged");
     await openViaClick(w);
-    await w.searchInput.fill("pazarlama");
+    await w.searchInput.fill("kırmızı ot");
     await expect(w.createRow).toBeVisible();
     await w.searchInput.press("Enter");
-    await expect(w.chips.filter({ hasText: "pazarlama" })).toHaveCount(1);
+    await expect(w.chips.filter({ hasText: "kırmızı ot" })).toHaveCount(1);
   });
 
   test("typing an existing label shows no create row", async ({ page }) => {
     const w = widget(page, "tagged");
     await openViaClick(w);
 
-    await w.searchInput.fill("Öneri"); // exact existing label
+    await w.searchInput.fill("Yeşil Ot"); // exact existing label
     await expect(w.options).toHaveCount(1);
     await expect(w.createRow).toBeHidden();
 
     // case-insensitive match also suppresses the create row
-    await w.searchInput.fill("öneri");
+    await w.searchInput.fill("yeşil ot");
     await expect(w.createRow).toBeHidden();
+
+    // the option FILTER folds diacritics: an ASCII query still finds the
+    // İ/ı-labelled option (İ→i and ı→i)
+    await w.searchInput.fill("ilk yardim");
+    await expect(w.options).toHaveCount(1);
+    await expect(w.options.first()).toHaveText("İlk Yardım Spreyi");
   });
 });
 
@@ -112,12 +118,12 @@ test.describe("#remote — async source", () => {
     await expect(w.options).toHaveCount(20);
 
     // 300ms between keys: past the 250ms debounce, inside the 400ms latency —
-    // the "a" load is guaranteed in-flight when "ah" supersedes it.
-    await w.searchInput.pressSequentially("ah", { delay: 300 });
+    // the "c" load is guaranteed in-flight when "ch" supersedes it.
+    await w.searchInput.pressSequentially("ch", { delay: 300 });
 
-    // results for the final query only: Ahmet Yılmaz + Mustafa Şahin
+    // results for the final query only: Chris Redfield + Rebecca Chambers
     await expect(w.options).toHaveCount(2);
-    await expect(w.options).toHaveText(["Ahmet Yılmaz", "Mustafa Şahin"]);
+    await expect(w.options).toHaveText(["Chris Redfield", "Rebecca Chambers"]);
     expect(errors).toEqual([]); // aborted load must fail silently
   });
 
@@ -126,16 +132,16 @@ test.describe("#remote — async source", () => {
     await openViaClick(w);
     await expect(w.options).toHaveCount(20);
 
-    await w.options.filter({ hasText: "Ahmet Yılmaz" }).click();
+    await w.options.filter({ hasText: "Jill Valentine" }).click();
 
     await expectClosed(w);
-    await expect(w.value).toHaveText("Ahmet Yılmaz");
-    await expect(page.locator("#remote-out")).toHaveText("Ahmet Yılmaz");
+    await expect(w.value).toHaveText("Jill Valentine");
+    await expect(page.locator("#remote-out")).toHaveText("Jill Valentine");
     const created = await w.native.evaluate((el) => {
       const o = el.querySelector<HTMLOptionElement>("option[data-sl-created]");
       return o ? { value: o.value, selected: o.selected, label: o.textContent } : null;
     });
-    expect(created).toEqual({ value: "u0", selected: true, label: "Ahmet Yılmaz" });
+    expect(created).toEqual({ value: "u0", selected: true, label: "Jill Valentine" });
   });
 });
 
@@ -160,7 +166,7 @@ test.describe("#remote — pagination (infinite scroll)", () => {
     const w = widget(page, "remote");
     await openViaClick(w);
     await expect(w.options).toHaveCount(20);
-    await expect(w.options.first()).toHaveText("Ahmet Yılmaz");
+    await expect(w.options.first()).toHaveText("Jill Valentine");
     await expect(w.loading).toBeHidden(); // skeleton gone once page 0 is in
   });
 
@@ -221,9 +227,9 @@ test.describe("#remote — pagination (infinite scroll)", () => {
     await expect(w.options).toHaveCount(40);
 
     // new query → back to a fresh page 0 of the filtered result set
-    await w.searchInput.fill("üye");
+    await w.searchInput.fill("personel");
     await expect(w.options).toHaveCount(20); // 90 hits, first page only
-    await expect(w.options.first()).toHaveText("Üye 011");
+    await expect(w.options.first()).toHaveText("Personel 011");
 
     // pagination still works within the filtered set
     await scrollListboxToBottom(w);

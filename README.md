@@ -33,7 +33,7 @@ Or from a CDN, with no build step (global namespace `window.Selectable`):
 <link rel="stylesheet" href="https://unpkg.com/@akinozgen17/selectablejs/dist/selectable.css">
 <script src="https://unpkg.com/@akinozgen17/selectablejs/dist/selectable.global.js"></script>
 <script>
-  new Selectable.Selectable("#city"); // namespace + class
+  new Selectable.Selectable("#site"); // namespace + class
 </script>
 ```
 
@@ -42,18 +42,18 @@ Or from a CDN, with no build step (global namespace `window.Selectable`):
 Your existing markup:
 
 ```html
-<select id="city" multiple>
-  <option value="">Choose a city…</option>
-  <option value="34" selected>Istanbul</option>
-  <option value="06">Ankara</option>
-  <option value="35">Izmir</option>
+<select id="site" multiple>
+  <option value="">Choose a location…</option>
+  <option value="rpd" selected>R.P.D. Station</option>
+  <option value="clock-tower">Clock Tower</option>
+  <option value="spencer">Spencer Mansion</option>
 </select>
 ```
 
 One line of JavaScript:
 
 ```js
-new Selectable("#city", { clearable: true });
+new Selectable("#site", { clearable: true });
 ```
 
 Options, groups, `multiple`, `disabled`, and the current selection are read from the native select. When the user picks a value, native `change`/`input` events fire on the original element.
@@ -120,10 +120,10 @@ new Selectable("select.enhance", { search: true });
 ### Events and methods
 
 ```js
-const sel = new Selectable("#city");
+const sel = new Selectable("#site");
 
 sel.on("change", ({ value, options }) => console.log(value));
-sel.setValue(["34", "06"]);
+sel.setValue(["rpd", "spencer"]);
 sel.open(); sel.close();
 sel.destroy(); // restores the native select exactly as it was
 ```
@@ -134,7 +134,7 @@ Members: `value`, `setValue()`, `getSelectedOptions()`, `open()/close()/toggle()
 ### Declarative init
 
 ```html
-<select data-selectable name="city">…</select>
+<select data-selectable name="site">…</select>
 <script>Selectable.Selectable.upgrade();</script>
 ```
 

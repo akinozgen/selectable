@@ -25,7 +25,7 @@ ever leaks into the host page.
       <span class="sl-placeholder">Choose…</span>
       <!-- single: plain text · multiple: chips -->
       <span class="sl-chip">
-        <span class="sl-chip-label">Ankara</span>
+        <span class="sl-chip-label">Green Herb</span>
         <span class="sl-chip-remove" aria-hidden="true">✕</span>
       </span>
       <span class="sl-chip sl-chip-counter">+3</span>  <!-- overflow: "counter" -->
@@ -50,15 +50,15 @@ ever leaks into the host page.
         <span class="sl-checkbox" aria-hidden="true">…✓ –…</span>
         <span class="sl-option-label">Select all</span>
       </div>
-      <div class="sl-group-label">Marmara</div>
+      <div class="sl-group-label">Raccoon City</div>
       <!-- selectAll: { groups: true } adds data-group/data-checked and the
            same always-visible checkbox (14px variant) before the label:
-           <div class="sl-group-label" data-group="Marmara" data-checked="none">
+           <div class="sl-group-label" data-group="Raccoon City" data-checked="none">
              <span class="sl-checkbox sl-group-toggle" aria-hidden="true">…✓ –…</span>
-             <span class="sl-group-text">Marmara</span>
+             <span class="sl-group-text">Raccoon City</span>
            </div> -->
       <div class="sl-option" role="option" aria-selected="false">
-        <span class="sl-option-label">Istanbul</span>
+        <span class="sl-option-label">R.P.D. Station</span>
         <svg class="sl-check"></svg>
       </div>
       <!-- with icon/image and/or subtext (data-icon/data-image/data-subtext
@@ -66,14 +66,14 @@ ever leaks into the host page.
       <div class="sl-option" role="option" aria-selected="false">
         <span class="sl-option-media" aria-hidden="true"><!-- <i class="…"> or <img alt=""> --></span>
         <span class="sl-option-content">
-          <span class="sl-option-label">Alice</span>
-          <span class="sl-option-subtext">admin@example.com</span>
+          <span class="sl-option-label">Jill Valentine</span>
+          <span class="sl-option-subtext">S.T.A.R.S. Alpha, Rear Security</span>
         </span>
         <svg class="sl-check"></svg>
       </div>
       <div class="sl-empty">No results found</div>
       <div class="sl-loading">…</div>          <!-- async loading skeleton -->
-      <div class="sl-create" role="option">Create "marketing"</div>  <!-- tags -->
+      <div class="sl-create" role="option">Create "green herb"</div>  <!-- tags -->
     </div>
   </div>
 

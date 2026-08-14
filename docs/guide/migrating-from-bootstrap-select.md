@@ -106,9 +106,9 @@ The bootstrap-select markup conventions work as-is — no template, no config:
 
 ```html
 <select id="member" data-selectable>
-  <option value="1" data-subtext="admin@example.com"
-          data-icon="fa fa-crown">Alice</option>
-  <option value="2" data-subtext="member@example.com">Ben</option>
+  <option value="1" data-subtext="S.T.A.R.S. Alpha, Rear Security"
+          data-icon="fa fa-crown">Jill Valentine</option>
+  <option value="2" data-subtext="R.P.D. Rookie">Leon S. Kennedy</option>
 </select>
 ```
 
@@ -158,9 +158,9 @@ label and on the single-mode trigger. Details:
         data-live-search="true" data-max-options="3"
         data-selected-text-format="count > 2"
         data-actions-box="true" title="Choose regions…">
-  <option value="34">Istanbul</option>
-  <option value="06">Ankara</option>
-  <option value="35">Izmir</option>
+  <option value="rc">Raccoon City</option>
+  <option value="arklay">Arklay Mountains</option>
+  <option value="europe">Europe</option>
 </select>
 <script>
   $("#regions").selectpicker();
@@ -174,9 +174,9 @@ label and on the single-mode trigger. Details:
 
 ```html
 <select id="regions" name="regions" multiple>
-  <option value="34">Istanbul</option>
-  <option value="06">Ankara</option>
-  <option value="35">Izmir</option>
+  <option value="rc">Raccoon City</option>
+  <option value="arklay">Arklay Mountains</option>
+  <option value="europe">Europe</option>
 </select>
 ```
 

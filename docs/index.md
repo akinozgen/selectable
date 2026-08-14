@@ -49,13 +49,13 @@ Your existing `<select multiple>`, enhanced with one line — chips, search, and
 
 <Demo
   multiple
-  placeholder="Choose a city…"
+  placeholder="Choose a location…"
   :options="[
-    { value: '34', label: 'Istanbul', group: 'Marmara', selected: true },
-    { value: '16', label: 'Bursa', group: 'Marmara' },
-    { value: '06', label: 'Ankara', group: 'Central Anatolia' },
-    { value: '42', label: 'Konya', group: 'Central Anatolia' },
-    { value: '35', label: 'Izmir', group: 'Aegean' },
+    { value: 'rpd', label: 'R.P.D. Station', group: 'Raccoon City', selected: true },
+    { value: 'clock-tower', label: 'Clock Tower', group: 'Raccoon City' },
+    { value: 'spencer', label: 'Spencer Mansion', group: 'Arklay Mountains' },
+    { value: 'guardhouse', label: 'Guardhouse', group: 'Arklay Mountains' },
+    { value: 'dimitrescu', label: 'Castle Dimitrescu', group: 'Europe' },
   ]"
   :config="{ clearable: true }"
   show-value
@@ -65,7 +65,7 @@ Your existing `<select multiple>`, enhanced with one line — chips, search, and
 import { Selectable } from "@akinozgen17/selectablejs";
 import "@akinozgen17/selectablejs/css";
 
-new Selectable("#city", { clearable: true });
+new Selectable("#site", { clearable: true });
 ```
 
 Options, groups, `multiple`, `disabled`, and the current selection are read from the native select. When the user picks a value, native `change`/`input` events fire on the original element.

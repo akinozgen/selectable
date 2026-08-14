@@ -33,12 +33,12 @@ test("scrolling to the middle renders the expected record window", async ({ page
   // animation scale transform and skew the math.
   const total = await w.listbox.evaluate((el) => el.scrollHeight);
   const rowHeight = total / 10000;
-  // scroll so row index 4999 ("Kayıt #05000") is the first visible row
+  // scroll so row index 4999 ("Denek #05000") is the first visible row
   await w.listbox.evaluate((el, top) => {
     el.scrollTop = top;
   }, rowHeight * 4999);
 
-  await expect(w.options.filter({ hasText: "Kayıt #05000" })).toHaveCount(1);
+  await expect(w.options.filter({ hasText: "Denek #05000" })).toHaveCount(1);
   expect(await w.options.count()).toBeLessThan(50);
 
   // the rendered window sits around the scroll target (overscan = 6)
@@ -58,9 +58,9 @@ test("Ctrl+End jumps to the last record", async ({ page }) => {
 
   await w.searchInput.press("Control+End");
 
-  await expect(w.activeOption).toHaveText("Kayıt #10000");
+  await expect(w.activeOption).toHaveText("Denek #10000");
   const target = await activeDescendantTarget(page, w.searchInput);
-  await expect(target).toHaveText("Kayıt #10000");
+  await expect(target).toHaveText("Denek #10000");
 });
 
 test("searching '00042' filters to one record and selects it", async ({ page }) => {
@@ -69,10 +69,10 @@ test("searching '00042' filters to one record and selects it", async ({ page }) 
   await w.searchInput.fill("00042");
 
   await expect(w.options).toHaveCount(1);
-  await expect(w.options.first()).toHaveText("Kayıt #00042");
+  await expect(w.options.first()).toHaveText("Denek #00042");
 
   await w.searchInput.press("Enter");
   await expectClosed(w);
   expect(await nativeValue(page, "big")).toBe("42");
-  await expect(w.value).toHaveText("Kayıt #00042");
+  await expect(w.value).toHaveText("Denek #00042");
 });

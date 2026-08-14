@@ -92,7 +92,7 @@ test.describe("ARIA wiring (docs/ANATOMI.md contract)", () => {
     const target = await activeDescendantTarget(page, w.trigger);
     await expect(target).toHaveAttribute("role", "option");
     await expect(target).toHaveAttribute("data-active", "");
-    await expect(target).toHaveText("Ankara");
+    await expect(target).toHaveText("Chris Redfield");
   });
 
   test("#multi listbox is aria-multiselectable", async ({ page }) => {
@@ -106,11 +106,11 @@ test.describe("ARIA wiring (docs/ANATOMI.md contract)", () => {
     await expect(w.live).toHaveAttribute("aria-live", "polite");
 
     await openViaClick(w);
-    await w.options.filter({ hasText: "CSS" }).click();
+    await w.options.filter({ hasText: "Kırmızı Ot" }).click();
     // announcement is debounced 150ms — toHaveText polls until it lands
-    await expect(w.live).toHaveText("CSS seçildi, toplam 3");
+    await expect(w.live).toHaveText("Kırmızı Ot seçildi, toplam 3");
 
-    await w.options.filter({ hasText: "CSS" }).click();
-    await expect(w.live).toHaveText("CSS kaldırıldı, toplam 2");
+    await w.options.filter({ hasText: "Kırmızı Ot" }).click();
+    await expect(w.live).toHaveText("Kırmızı Ot kaldırıldı, toplam 2");
   });
 });

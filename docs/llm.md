@@ -29,18 +29,18 @@ CDN / no-bundler (IIFE, exposes a **namespace** `window.Selectable`):
 <link rel="stylesheet" href="https://unpkg.com/@akinozgen17/selectablejs/dist/selectable.css">
 <script src="https://unpkg.com/@akinozgen17/selectablejs/dist/selectable.global.js"></script>
 <script>
-  const sel = new Selectable.Selectable("#city"); // note: namespace.Class
+  const sel = new Selectable.Selectable("#site"); // note: namespace.Class
 </script>
 ```
 
 ## Quick start — the ONE canonical way
 
 ```html
-<select id="city" multiple>
-  <option value="">Pick cities…</option> <!-- empty-value first option = placeholder -->
-  <optgroup label="Marmara">
-    <option value="34" selected>İstanbul</option>
-    <option value="16">Bursa</option>
+<select id="site" multiple>
+  <option value="">Pick locations…</option> <!-- empty-value first option = placeholder -->
+  <optgroup label="Raccoon City">
+    <option value="rpd" selected>R.P.D. Station</option>
+    <option value="clock-tower">Clock Tower</option>
   </optgroup>
 </select>
 ```
@@ -49,7 +49,7 @@ CDN / no-bundler (IIFE, exposes a **namespace** `window.Selectable`):
 import { Selectable } from "@akinozgen17/selectablejs";
 import "@akinozgen17/selectablejs/css";
 
-const sel = new Selectable("#city", { clearable: true });
+const sel = new Selectable("#site", { clearable: true });
 sel.on("change", ({ value, options }) => console.log(value)); // value: string[]
 ```
 
@@ -300,14 +300,14 @@ new Selectable("#user", {
 ```
 
 ```js
-new Selectable("#city", { theme: "dark" }); // per-instance pin
+new Selectable("#site", { theme: "dark" }); // per-instance pin
 ```
 
 ### 8. Framework integration (React / Vue / Livewire)
 
 ```jsx
 // React — native change events reach onChange; destroy in cleanup (StrictMode-safe)
-function CitySelect({ onChange }) {
+function SiteSelect({ onChange }) {
   const ref = useRef(null);
   useEffect(() => {
     const sel = new Selectable(ref.current, { clearable: true });
@@ -319,7 +319,7 @@ function CitySelect({ onChange }) {
 
 ```vue
 <!-- Vue — v-model just works (native input/change are dispatched) -->
-<select ref="el" v-model="city"> … </select>
+<select ref="el" v-model="site"> … </select>
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
 let sel; const el = ref(null);
@@ -331,7 +331,7 @@ onBeforeUnmount(() => sel?.destroy());
 ```html
 <!-- Livewire — wire:ignore keeps morph away; upgrade() is idempotent -->
 <div wire:ignore>
-  <select data-selectable wire:model.change="city"> … </select>
+  <select data-selectable wire:model.change="site"> … </select>
 </div>
 <script>
   Selectable.upgrade(); // and after SPA navigation:
@@ -361,24 +361,24 @@ sel.on("beforeCreate", (e) => {
 });
 ```
 
-### 10. Chained address form (il → ilçe → mahalle)
+### 10. Chained form flow (region → facility → room)
 
 ```js
 // `next` auto-opens the following select after a pick closes the panel;
 // `autofocus` starts the flow on page load (first constructed instance only).
-const il = new Selectable("#il", { autofocus: true, next: "#ilce" });
-const ilce = new Selectable("#ilce", { next: "#mahalle" });
-const mahalle = new Selectable("#mahalle"); // terminal — no next
+const region = new Selectable("#region", { autofocus: true, next: "#facility" });
+const facility = new Selectable("#facility", { next: "#room" });
+const room = new Selectable("#room"); // terminal — no next
 
 // ORDER GUARANTEE: change handlers run BEFORE the next panel opens —
 // populate the dependent select here and its panel opens already filled.
-il.on("change", ({ value }) => {
-  ilce.setValue([], { silent: true });
-  ilce.setOptions(districtsByProvince[value[0]] ?? []);
+region.on("change", ({ value }) => {
+  facility.setValue([], { silent: true });
+  facility.setOptions(facilitiesByRegion[value[0]] ?? []);
 });
-ilce.on("change", ({ value }) => {
-  mahalle.setValue([], { silent: true });
-  mahalle.setOptions(neighborhoodsByDistrict[value[0]] ?? []);
+facility.on("change", ({ value }) => {
+  room.setValue([], { silent: true });
+  room.setOptions(roomsByFacility[value[0]] ?? []);
 });
 // Escape/outside-click dismissals, setValue(), clear() and chip removal do
 // NOT advance the chain; multi-mode chains need explicit closeOnSelect: true.

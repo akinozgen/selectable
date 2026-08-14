@@ -13,7 +13,7 @@ derived from the native `<select>`.
 
 ```js
 import { Selectable } from "@akinozgen17/selectablejs";
-const sel = new Selectable("#city", { /* options */ });
+const sel = new Selectable("#site", { /* options */ });
 ```
 
 ## Summary table
@@ -66,10 +66,10 @@ three bootstrap-select conventions are additionally promoted to typed fields:
 
 ```html
 <select id="member">
-  <option value="1" data-subtext="admin@example.com"
-          data-image="/avatars/alice.png">Alice</option>
+  <option value="1" data-subtext="S.T.A.R.S. Alpha, Rear Security"
+          data-image="/avatars/jill.png">Jill Valentine</option>
   <option value="2" data-icon="fa fa-user"
-          data-subtext="member@example.com">Ben</option>
+          data-subtext="R.P.D. Rookie">Leon S. Kennedy</option>
 </select>
 ```
 
@@ -103,11 +103,11 @@ and kept in sync automatically if they change later.
 **2. As an array:**
 
 ```js
-new Selectable("#city", {
+new Selectable("#site", {
   source: [
-    { value: "34", label: "Istanbul", group: "Marmara" },
-    { value: "06", label: "Ankara", group: "Central Anatolia" },
-    { value: "42", label: "Konya", group: "Central Anatolia", disabled: true },
+    { value: "rpd", label: "R.P.D. Station", group: "Raccoon City" },
+    { value: "spencer", label: "Spencer Mansion", group: "Arklay Mountains" },
+    { value: "training", label: "Training Facility", group: "Arklay Mountains", disabled: true },
   ],
 });
 ```
@@ -211,16 +211,16 @@ folds to `i`). Local filtering is instantaneous; `debounceMs` only applies to
 async sources. On touch devices the search input is deliberately not
 auto-focused, so the virtual keyboard doesn't pop open uninvited.
 
-Try the default filter (type `istanbul` or `canakkale`):
+Try the default filter (type `nest` or `SPENCER`):
 
 <Demo
-  placeholder="Search a province…"
+  placeholder="Search a location…"
   :options="[
-    { value: '06', label: 'Ankara' },
-    { value: '17', label: 'Çanakkale' },
-    { value: '34', label: 'İstanbul' },
-    { value: '35', label: 'İzmir' },
-    { value: '63', label: 'Şanlıurfa' },
+    { value: 'dimitrescu', label: 'Castle Dimitrescu' },
+    { value: 'clock-tower', label: 'Clock Tower' },
+    { value: 'nest', label: 'NEST Laboratory' },
+    { value: 'rpd', label: 'R.P.D. Station' },
+    { value: 'spencer', label: 'Spencer Mansion' },
   ]"
   :config="{ search: true }"
 />
@@ -255,7 +255,7 @@ the trigger. The semantics mirror native `autofocus`:
 - `beforeOpen` can veto it like any other open.
 
 ```js
-new Selectable("#il", { autofocus: true }); // panel opens on page load
+new Selectable("#region", { autofocus: true }); // panel opens on page load
 ```
 
 Combined with [`next`](#next), this turns a page into a keyboard-first form
@@ -294,41 +294,41 @@ Advance rules:
 `change` — e.g. loading the district options for the picked province via
 `setOptions()` — runs before the next panel opens.
 
-### Chained form flow: il → ilçe → mahalle
+### Chained form flow: region → facility → room
 
 ```html
-<select id="il">
-  <option value="">İl seçiniz…</option>
-  <option value="34">İstanbul</option>
-  <option value="06">Ankara</option>
+<select id="region">
+  <option value="">Choose a region…</option>
+  <option value="rc">Raccoon City</option>
+  <option value="arklay">Arklay Mountains</option>
 </select>
-<select id="ilce"><option value="">İlçe seçiniz…</option></select>
-<select id="mahalle"><option value="">Mahalle seçiniz…</option></select>
+<select id="facility"><option value="">Choose a facility…</option></select>
+<select id="room"><option value="">Choose a room…</option></select>
 ```
 
 ```js
-const districts = {
-  "34": [{ value: "kadikoy", label: "Kadıköy" }, { value: "besiktas", label: "Beşiktaş" }],
-  "06": [{ value: "cankaya", label: "Çankaya" }, { value: "kecioren", label: "Keçiören" }],
+const facilities = {
+  "rc": [{ value: "rpd", label: "R.P.D. Station" }, { value: "clock-tower", label: "Clock Tower" }],
+  "arklay": [{ value: "spencer", label: "Spencer Mansion" }, { value: "guardhouse", label: "Guardhouse" }],
 };
 
-const il = new Selectable("#il", { autofocus: true, next: "#ilce" });
-const ilce = new Selectable("#ilce", { next: "#mahalle" });
-const mahalle = new Selectable("#mahalle"); // terminal — no next
+const region = new Selectable("#region", { autofocus: true, next: "#facility" });
+const facility = new Selectable("#facility", { next: "#room" });
+const room = new Selectable("#room"); // terminal — no next
 
-// Runs BEFORE the #ilce panel opens (order guarantee):
-il.on("change", ({ value }) => {
-  ilce.setValue([], { silent: true });
-  ilce.setOptions(districts[value[0]] ?? []);
+// Runs BEFORE the #facility panel opens (order guarantee):
+region.on("change", ({ value }) => {
+  facility.setValue([], { silent: true });
+  facility.setOptions(facilities[value[0]] ?? []);
 });
-ilce.on("change", ({ value }) => {
-  mahalle.setValue([], { silent: true });
-  mahalle.setOptions(loadNeighborhoods(value[0])); // sync map lookup
+facility.on("change", ({ value }) => {
+  room.setValue([], { silent: true });
+  room.setOptions(loadRooms(value[0])); // sync map lookup
 });
 ```
 
-Picking a province opens the district panel already populated; picking a
-district opens the neighborhood panel; picking a neighborhood ends the chain
+Picking a region opens the facility panel already populated; picking a
+facility opens the room panel; picking a room ends the chain
 (no `next` on the last instance). Dismissing any panel (Escape, outside
 click) stops the flow at that step.
 
@@ -349,7 +349,7 @@ pinned *Select all / Deselect all* header row appears above the options:
 
 ```js
 new Selectable("#skills", { selectAll: true });
-new Selectable("#cities", { selectAll: { groups: true } }); // + group toggles
+new Selectable("#sites", { selectAll: { groups: true } }); // + group toggles
 ```
 
 - **Scope: the filtered enabled options.** With an active search query the
@@ -420,11 +420,11 @@ Type a label that doesn't exist yet and press `Enter`:
 
 <Demo
   multiple
-  placeholder="Add labels…"
+  placeholder="Add items…"
   :options="[
-    { value: 'bug', label: 'bug' },
-    { value: 'feature', label: 'feature' },
-    { value: 'docs', label: 'docs' },
+    { value: 'green-herb', label: 'green herb' },
+    { value: 'red-herb', label: 'red herb' },
+    { value: 'ink-ribbon', label: 'ink ribbon' },
   ]"
   :config="{ tags: true, clearable: true }"
   show-value
@@ -455,7 +455,7 @@ Panel placement. **Note:** there is no `zIndex` or `dropdownParent` option —
 the panel opens in the top layer, so neither is needed.
 
 ```js
-new Selectable("#city", {
+new Selectable("#site", {
   positioning: {
     strategy: "auto",   // "popover" | "portal" | "auto"; "portal" forces the fallback path
     placement: "auto",  // "bottom-start" | "top-start" | "auto" (prefers bottom, flips when needed)
@@ -499,9 +499,9 @@ ships with the library:
 
 ```js
 import { Selectable, tr } from "@akinozgen17/selectablejs";
-new Selectable("#city", { i18n: tr });
+new Selectable("#site", { i18n: tr });
 // or override selectively:
-new Selectable("#city", { i18n: { noResults: "Nothing found", placeholder: "Pick one…" } });
+new Selectable("#site", { i18n: { noResults: "Nothing found", placeholder: "Pick one…" } });
 ```
 
 Message keys: `placeholder`, `noResults`, `loading`, `searchPlaceholder`,

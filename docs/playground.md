@@ -20,7 +20,7 @@ One line enhances the native select; `clearable` adds an ✕ that empties the se
 
 ## Searchable
 
-Search is locale-aware and diacritic-tolerant out of the box — typing `istanbul` matches **İstanbul**, and Turkish dotless `ı` folds to `i`. It also turns on automatically for lists with more than 8 options.
+Search is locale-aware and diacritic-tolerant out of the box — case folds per locale and accented characters match their base letters (Turkish dotless `ı` folds to `i`). It also turns on automatically for lists with more than 8 options.
 
 <EditableDemo snippet="searchable" />
 
@@ -56,7 +56,7 @@ When the query matches nothing, a *Create "…"* row appears; created tags becom
 
 ## Remote data — pagination / infinite scroll
 
-This demo fakes a paginated API — 100 members, 20 per page, ~400 ms latency. Return `{ options, hasMore }` from the fetcher and scrolling near the end of the list loads the next page automatically; debouncing, request cancellation (`AbortController`) and a per-page LRU cache are built in. **Open the panel and scroll to the bottom of the list** to watch pages append.
+This demo fakes a paginated API — 100 agents, 20 per page, ~400 ms latency. Return `{ options, hasMore }` from the fetcher and scrolling near the end of the list loads the next page automatically; debouncing, request cancellation (`AbortController`) and a per-page LRU cache are built in. **Open the panel and scroll to the bottom of the list** to watch pages append.
 
 <EditableDemo snippet="remote" />
 
@@ -74,13 +74,13 @@ bootstrap-select markup parity: `data-subtext`, `data-image`, and `data-icon` on
 
 ## Cancellable before-events
 
-`beforeOpen`, `beforeClose`, `beforeChange`, and `beforeCreate` fire ahead of their action; calling `e.preventDefault()` aborts it silently — no state change, no follow-up events. Try picking **Forbidden** below.
+`beforeOpen`, `beforeClose`, `beforeChange`, and `beforeCreate` fire ahead of their action; calling `e.preventDefault()` aborts it silently — no state change, no follow-up events. Try picking **Albert Wesker** below — that option is blocked by a `beforeChange` handler.
 
 <EditableDemo snippet="veto" />
 
 ## Chained form flow — `next`
 
-Give each control a `next` target and every pick that closes a panel opens the following one — with the guarantee that `change` handlers run first, so dependent options are loaded before the next panel appears. Pick a province and follow the chain (`autofocus: true` can start the flow on page load; it's off here on purpose).
+Give each control a `next` target and every pick that closes a panel opens the following one — with the guarantee that `change` handlers run first, so dependent options are loaded before the next panel appears. Pick a region and follow the chain (`autofocus: true` can start the flow on page load; it's off here on purpose).
 
 <EditableDemo snippet="chain" />
 

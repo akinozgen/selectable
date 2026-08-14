@@ -35,7 +35,7 @@ The IIFE build (`dist/selectable.global.js`) defines a global **namespace**:
 <link rel="stylesheet" href="https://unpkg.com/@akinozgen17/selectablejs/dist/selectable.css">
 <script src="https://unpkg.com/@akinozgen17/selectablejs/dist/selectable.global.js"></script>
 <script>
-  const sel = new Selectable.Selectable("#city"); // note: Selectable.Selectable
+  const sel = new Selectable.Selectable("#site"); // note: Selectable.Selectable
   // The other exports sit alongside it: Selectable.tr, Selectable.asyncSource…
 </script>
 ```
@@ -47,16 +47,16 @@ already have, in place. Your markup stays what it is:
 
 ```html
 <form>
-  <label for="city">City</label>
-  <select id="city" name="cities" multiple>
-    <option value="">Choose a city…</option>          <!-- empty value = placeholder -->
-    <optgroup label="Marmara">
-      <option value="34" selected>Istanbul</option>
-      <option value="16">Bursa</option>
+  <label for="site">Location</label>
+  <select id="site" name="sites" multiple>
+    <option value="">Choose a location…</option>      <!-- empty value = placeholder -->
+    <optgroup label="Raccoon City">
+      <option value="rpd" selected>R.P.D. Station</option>
+      <option value="clock-tower">Clock Tower</option>
     </optgroup>
-    <optgroup label="Central Anatolia">
-      <option value="06">Ankara</option>
-      <option value="42" disabled>Konya</option>
+    <optgroup label="Arklay Mountains">
+      <option value="spencer">Spencer Mansion</option>
+      <option value="training" disabled>Training Facility</option>
     </optgroup>
   </select>
 </form>
@@ -66,11 +66,11 @@ already have, in place. Your markup stays what it is:
 import { Selectable } from "@akinozgen17/selectablejs";
 import "@akinozgen17/selectablejs/css";
 
-const sel = new Selectable("#city", { clearable: true });
+const sel = new Selectable("#site", { clearable: true });
 
 sel.on("change", ({ value, options }) => {
-  console.log(value);                       // ["34"] — always string[]
-  console.log(options.map((o) => o.label)); // ["Istanbul"]
+  console.log(value);                       // ["rpd"] — always string[]
+  console.log(options.map((o) => o.label)); // ["R.P.D. Station"]
 });
 ```
 
@@ -79,12 +79,12 @@ The exact markup above, live:
 <Demo
   multiple
   :options="[
-    { value: '34', label: 'Istanbul', group: 'Marmara', selected: true },
-    { value: '16', label: 'Bursa', group: 'Marmara' },
-    { value: '06', label: 'Ankara', group: 'Central Anatolia' },
-    { value: '42', label: 'Konya', group: 'Central Anatolia', disabled: true },
+    { value: 'rpd', label: 'R.P.D. Station', group: 'Raccoon City', selected: true },
+    { value: 'clock-tower', label: 'Clock Tower', group: 'Raccoon City' },
+    { value: 'spencer', label: 'Spencer Mansion', group: 'Arklay Mountains' },
+    { value: 'training', label: 'Training Facility', group: 'Arklay Mountains', disabled: true },
   ]"
-  placeholder="Choose a city…"
+  placeholder="Choose a location…"
   :config="{ clearable: true }"
   show-value
 />
@@ -149,7 +149,7 @@ update in DOM-morphing environments like Livewire, htmx, or Turbo.
 To reach an instance later:
 
 ```js
-const sel = Selectable.getInstance(document.querySelector("#city"));
+const sel = Selectable.getInstance(document.querySelector("#site"));
 ```
 
 ## Teardown and re-init

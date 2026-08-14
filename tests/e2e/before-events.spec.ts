@@ -11,7 +11,7 @@ import {
 
 /**
  * #veto fixture (single, no search):
- * - beforeChange vetoes any selection containing "forbidden"
+ * - beforeChange vetoes any selection containing the value "forbidden"
  * - beforeClose vetoes while the #veto-lock checkbox is checked
  */
 test.beforeEach(async ({ page }) => {
@@ -24,18 +24,18 @@ test.describe("#veto — beforeChange veto", () => {
     await installChangeCounter(page, "veto");
     await openViaClick(w);
 
-    await w.options.filter({ hasText: "Yasaklı" }).click();
+    await w.options.filter({ hasText: "Albert Wesker" }).click();
     await expectOpen(w); // veto skips closeOnSelect
     expect(await nativeValue(page, "veto")).toBe("");
     expect(await changeCount(page, "veto")).toBe(0); // native select untouched
     await expect(w.value.locator(".sl-placeholder")).toBeVisible();
 
     // a permitted option still selects and closes normally
-    await w.options.filter({ hasText: "Serbest 1" }).click();
+    await w.options.filter({ hasText: "Ada Wong" }).click();
     await expectClosed(w);
-    expect(await nativeValue(page, "veto")).toBe("serbest-1");
+    expect(await nativeValue(page, "veto")).toBe("ada");
     expect(await changeCount(page, "veto")).toBe(1);
-    await expect(w.value).toHaveText("Serbest 1");
+    await expect(w.value).toHaveText("Ada Wong");
   });
 });
 

@@ -15,8 +15,18 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
-/** #multi: 9 options, js+ts preselected, selectAll: true, auto-search on. */
-const ALL_MULTI = ["js", "ts", "css", "html", "php", "py", "go", "rs", "sql"];
+/** #multi: 9 options, first two preselected, selectAll: true, auto-search on. */
+const ALL_MULTI = [
+  "yesil-ot",
+  "mavi-ot",
+  "kirmizi-ot",
+  "ilk-yardim",
+  "murekkep-seridi",
+  "maymuncuk",
+  "depo-anahtari",
+  "daktilo-seridi",
+  "sifali-karisim",
+];
 
 test.describe("#multi — select-all header row", () => {
   test("click selects every option in one change; label flips to deselect", async ({ page }) => {
@@ -27,7 +37,7 @@ test.describe("#multi — select-all header row", () => {
     await expect(w.selectAllRow).toBeVisible();
     await expect(w.selectAllRow).toHaveText("Tümünü seç");
     await expect(w.selectAllRow).toHaveAttribute("aria-selected", "false");
-    // permanent checkbox affordance: visible and indeterminate (js+ts preselected)
+    // permanent checkbox affordance: visible and indeterminate (2 preselected)
     await expect(w.selectAllRow.locator(".sl-checkbox")).toBeVisible();
     await expect(w.selectAllRow).toHaveAttribute("data-checked", "some");
 
@@ -54,11 +64,18 @@ test.describe("#multi — select-all header row", () => {
   test("toggle respects the active query (filtered subset only)", async ({ page }) => {
     const w = widget(page, "multi");
     await openViaClick(w);
-    await w.searchInput.fill("s"); // js, ts, css, rs, sql
+    // 'o' matches: Yeşil Ot, Mavi Ot, Kırmızı Ot, Depo Anahtarı, Daktilo Şeridi
+    await w.searchInput.fill("o");
     await expect(w.options).toHaveCount(5);
 
     await w.selectAllRow.click();
-    expect(await nativeSelected(page, "multi")).toEqual(["js", "ts", "css", "rs", "sql"]);
+    expect(await nativeSelected(page, "multi")).toEqual([
+      "yesil-ot",
+      "mavi-ot",
+      "kirmizi-ot",
+      "depo-anahtari",
+      "daktilo-seridi",
+    ]);
     await expect(w.selectAllRow).toHaveText("Tümünü kaldır");
   });
 
@@ -66,8 +83,8 @@ test.describe("#multi — select-all header row", () => {
     const w = widget(page, "multi");
     await openViaClick(w);
     await expect(w.searchInput).toBeFocused();
-    // initial active row = first selected option (JavaScript, index 0)
-    await expect(w.activeOption).toHaveText("JavaScript");
+    // initial active row = first selected option (Yeşil Ot, index 0)
+    await expect(w.activeOption).toHaveText("Yeşil Ot");
 
     await w.searchInput.press("ArrowUp");
     await expect(w.selectAllRow).toHaveAttribute("data-active", "");
@@ -82,7 +99,7 @@ test.describe("#multi — select-all header row", () => {
     // ArrowDown returns to the first real option
     await w.searchInput.press("ArrowDown");
     await expect(w.selectAllRow).not.toHaveAttribute("data-active", "");
-    await expect(w.activeOption).toHaveText("JavaScript");
+    await expect(w.activeOption).toHaveText("Yeşil Ot");
   });
 
   test("Ctrl+Shift+A toggles from the search input (Ctrl+A stays native)", async ({ page }) => {
@@ -100,35 +117,35 @@ test.describe("#grouped-multi — per-group toggles", () => {
     const w = widget(page, "grouped-multi");
     await openViaClick(w);
 
-    const marmara = w.groupLabels.filter({ hasText: "Marmara" });
-    const ege = w.groupLabels.filter({ hasText: "Ege" });
-    await expect(marmara).toHaveAttribute("data-checked", "none");
+    const raccoon = w.groupLabels.filter({ hasText: "Raccoon City" });
+    const arklay = w.groupLabels.filter({ hasText: "Arklay Dağları" });
+    await expect(raccoon).toHaveAttribute("data-checked", "none");
     // permanent affordance: the checkbox square is visible even at "none"
-    await expect(marmara.locator(".sl-checkbox")).toBeVisible();
-    await expect(ege.locator(".sl-checkbox")).toBeVisible();
+    await expect(raccoon.locator(".sl-checkbox")).toBeVisible();
+    await expect(arklay.locator(".sl-checkbox")).toBeVisible();
 
-    await marmara.click();
-    await expect(w.chips).toHaveText(["İstanbul", "Bursa", "Kocaeli"]);
-    expect(await nativeSelected(page, "grouped-multi")).toEqual(["34", "16", "41"]);
-    await expect(marmara).toHaveAttribute("data-checked", "all");
-    await expect(ege).toHaveAttribute("data-checked", "none");
+    await raccoon.click();
+    await expect(w.chips).toHaveText(["R.P.D. Merkezi", "Çan Kulesi", "Hastane"]);
+    expect(await nativeSelected(page, "grouped-multi")).toEqual(["rpd", "can-kulesi", "hastane"]);
+    await expect(raccoon).toHaveAttribute("data-checked", "all");
+    await expect(arklay).toHaveAttribute("data-checked", "none");
 
     // partial group → "some"
-    await w.options.filter({ hasText: "İzmir" }).click();
-    await expect(ege).toHaveAttribute("data-checked", "some");
+    await w.options.filter({ hasText: "Spencer Malikanesi" }).click();
+    await expect(arklay).toHaveAttribute("data-checked", "some");
 
     // toggling a fully selected group deselects only that group
-    await marmara.click();
-    await expect(w.chips).toHaveText(["İzmir"]);
-    expect(await nativeSelected(page, "grouped-multi")).toEqual(["35"]);
-    await expect(marmara).toHaveAttribute("data-checked", "none");
+    await raccoon.click();
+    await expect(w.chips).toHaveText(["Spencer Malikanesi"]);
+    expect(await nativeSelected(page, "grouped-multi")).toEqual(["spencer"]);
+    await expect(raccoon).toHaveAttribute("data-checked", "none");
   });
 
   test("first group stays visible below the sticky header on open AND reopen (no jump)", async ({ page }) => {
     const w = widget(page, "grouped-multi");
     const firstGroupBelowHeader = async () => {
       const sa = await w.selectAllRow.boundingBox();
-      const g = await w.groupLabels.filter({ hasText: "Marmara" }).boundingBox();
+      const g = await w.groupLabels.filter({ hasText: "Raccoon City" }).boundingBox();
       expect(g!.y).toBeGreaterThanOrEqual(sa!.y + sa!.height - 1);
       // the vlist push-down that keeps rows clear of the sticky header
       const inset = await w.root
@@ -142,7 +159,7 @@ test.describe("#grouped-multi — per-group toggles", () => {
     await firstGroupBelowHeader();
 
     // regression: reopening re-ran the measurement while the panel was still
-    // display:none (offsetHeight 0) and CLEARED the offset — "Marmara"
+    // display:none (offsetHeight 0) and CLEARED the offset — "Raccoon City"
     // rendered underneath the sticky select-all row until the first hover
     // re-measured it, which read as a missing group + a visual jump.
     await page.keyboard.press("Escape");
@@ -156,7 +173,7 @@ test.describe("#grouped-multi — per-group toggles", () => {
     await openViaClick(w);
     await w.selectAllRow.click();
     await expect(w.chips).toHaveCount(7);
-    await expect(w.groupLabels.filter({ hasText: "Marmara" })).toHaveAttribute(
+    await expect(w.groupLabels.filter({ hasText: "Raccoon City" })).toHaveAttribute(
       "data-checked",
       "all",
     );

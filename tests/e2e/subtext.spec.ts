@@ -17,30 +17,30 @@ test("panel renders subtext lines and images from native data-*", async ({ page 
   await openViaClick(w);
 
   // image + subtext option
-  const ada = w.options.filter({ hasText: "Ada Yılmaz" });
-  await expect(ada.locator(".sl-option-media img")).toBeVisible();
-  await expect(ada.locator(".sl-option-subtext")).toContainText("ada@ornek.com");
+  const jill = w.options.filter({ hasText: "Jill Valentine" });
+  await expect(jill.locator(".sl-option-media img")).toBeVisible();
+  await expect(jill.locator(".sl-option-subtext")).toContainText("S.T.A.R.S. Alpha");
 
   // image-only option: media box, no subtext node
-  const deniz = w.options.filter({ hasText: "Deniz Kaya" });
-  await expect(deniz.locator(".sl-option-media img")).toBeVisible();
-  await expect(deniz.locator(".sl-option-subtext")).toHaveCount(0);
+  const chris = w.options.filter({ hasText: "Chris Redfield" });
+  await expect(chris.locator(".sl-option-media img")).toBeVisible();
+  await expect(chris.locator(".sl-option-subtext")).toHaveCount(0);
 
   // subtext-only option: no media box
-  const ekin = w.options.filter({ hasText: "Ekin Demir" });
-  await expect(ekin.locator(".sl-option-subtext")).toHaveText("ekin@ornek.com");
-  await expect(ekin.locator(".sl-option-media")).toHaveCount(0);
+  const leon = w.options.filter({ hasText: "Leon S. Kennedy" });
+  await expect(leon.locator(".sl-option-subtext")).toHaveText("R.P.D. Aday Memuru");
+  await expect(leon.locator(".sl-option-media")).toHaveCount(0);
 });
 
 test("selected value shows image + label in the trigger, subtext stays in the panel", async ({ page }) => {
   const w = widget(page, "subtext");
   await openViaClick(w);
-  await w.searchInput.fill("Ada");
-  await w.options.filter({ hasText: "Ada Yılmaz" }).click();
+  await w.searchInput.fill("Jill");
+  await w.options.filter({ hasText: "Jill Valentine" }).click();
   await expectClosed(w);
 
   await expect(w.value.locator(".sl-option-media img")).toBeVisible();
-  await expect(w.value).toHaveText("Ada Yılmaz");
+  await expect(w.value).toHaveText("Jill Valentine");
   await expect(w.value.locator(".sl-option-subtext")).toHaveCount(0);
 });
 
@@ -75,6 +75,6 @@ test("60 subtext options virtualize with uniform, raised rows", async ({ page })
   await w.listbox.evaluate((el) => {
     el.scrollTop = el.scrollHeight;
   });
-  await expect(w.options.filter({ hasText: "Kişi 56" })).toHaveCount(1);
+  await expect(w.options.filter({ hasText: "Personel 56" })).toHaveCount(1);
   expect(await w.options.count()).toBeLessThan(60);
 });

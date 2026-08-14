@@ -15,9 +15,9 @@ test.beforeEach(async ({ page }) => {
 
 /**
  * #basic — no-search mode (5 real options, under the search auto-threshold).
- * NOTE: the demo's disabled option is "Bursa (disabled)" (value 16) — the
- * task brief said İzmir, but tests follow the real demo DOM.
- * Option order: İstanbul, Ankara, İzmir, Bursa (disabled), Antalya.
+ * The demo's disabled option is "Barry Burton (disabled)" (value barry).
+ * Option order: Jill Valentine, Chris Redfield, Leon S. Kennedy,
+ * Barry Burton (disabled), Claire Redfield.
  */
 test.describe("#basic keyboard map (no-search mode)", () => {
   test("Enter / Space / ArrowDown / ArrowUp open the panel", async ({ page }) => {
@@ -26,7 +26,7 @@ test.describe("#basic keyboard map (no-search mode)", () => {
       await w.trigger.press(key);
       await expectOpen(w);
       // active = selected option, or first enabled when nothing is selected
-      await expect(w.activeOption).toHaveText("İstanbul");
+      await expect(w.activeOption).toHaveText("Jill Valentine");
       await w.trigger.press("Escape");
       await expectClosed(w);
     }
@@ -36,78 +36,78 @@ test.describe("#basic keyboard map (no-search mode)", () => {
     const w = widget(page, "basic");
     await w.trigger.press("ArrowDown");
     await expectOpen(w);
-    await expect(w.activeOption).toHaveText("İstanbul");
+    await expect(w.activeOption).toHaveText("Jill Valentine");
 
     await w.trigger.press("ArrowDown");
-    await expect(w.activeOption).toHaveText("Ankara");
+    await expect(w.activeOption).toHaveText("Chris Redfield");
     await w.trigger.press("ArrowDown");
-    await expect(w.activeOption).toHaveText("İzmir");
-    // Bursa is disabled — skipped in one keystroke
+    await expect(w.activeOption).toHaveText("Leon S. Kennedy");
+    // Barry Burton is disabled — skipped in one keystroke
     await w.trigger.press("ArrowDown");
-    await expect(w.activeOption).toHaveText("Antalya");
+    await expect(w.activeOption).toHaveText("Claire Redfield");
     // bottom edge: no wrap
     await w.trigger.press("ArrowDown");
-    await expect(w.activeOption).toHaveText("Antalya");
+    await expect(w.activeOption).toHaveText("Claire Redfield");
 
     await w.trigger.press("ArrowUp");
-    await expect(w.activeOption).toHaveText("İzmir");
+    await expect(w.activeOption).toHaveText("Leon S. Kennedy");
     await w.trigger.press("ArrowUp");
-    await expect(w.activeOption).toHaveText("Ankara");
+    await expect(w.activeOption).toHaveText("Chris Redfield");
     await w.trigger.press("ArrowUp");
-    await expect(w.activeOption).toHaveText("İstanbul");
+    await expect(w.activeOption).toHaveText("Jill Valentine");
     // top edge: no wrap
     await w.trigger.press("ArrowUp");
-    await expect(w.activeOption).toHaveText("İstanbul");
+    await expect(w.activeOption).toHaveText("Jill Valentine");
   });
 
   test("Home/End on the closed trigger open and jump to first/last", async ({ page }) => {
     const w = widget(page, "basic");
     await w.trigger.press("End");
     await expectOpen(w);
-    await expect(w.activeOption).toHaveText("Antalya");
+    await expect(w.activeOption).toHaveText("Claire Redfield");
 
     await w.trigger.press("Home");
-    await expect(w.activeOption).toHaveText("İstanbul");
+    await expect(w.activeOption).toHaveText("Jill Valentine");
     await w.trigger.press("End");
-    await expect(w.activeOption).toHaveText("Antalya");
+    await expect(w.activeOption).toHaveText("Claire Redfield");
   });
 
   test("PageDown/PageUp clamp at list edges on a short list", async ({ page }) => {
     const w = widget(page, "basic");
     await w.trigger.press("ArrowDown");
     await expectOpen(w);
-    await expect(w.activeOption).toHaveText("İstanbul");
+    await expect(w.activeOption).toHaveText("Jill Valentine");
     // 10-jump on a 5-option list clamps to the last enabled option
     await w.trigger.press("PageDown");
-    await expect(w.activeOption).toHaveText("Antalya");
+    await expect(w.activeOption).toHaveText("Claire Redfield");
     await w.trigger.press("PageUp");
-    await expect(w.activeOption).toHaveText("İstanbul");
+    await expect(w.activeOption).toHaveText("Jill Valentine");
   });
 
   test("typeahead: single letter jumps, repeating the letter cycles", async ({ page }) => {
     const w = widget(page, "basic");
     await w.trigger.press("ArrowDown");
     await expectOpen(w);
-    await expect(w.activeOption).toHaveText("İstanbul");
+    await expect(w.activeOption).toHaveText("Jill Valentine");
 
-    await w.trigger.press("a");
-    await expect(w.activeOption).toHaveText("Ankara");
-    await w.trigger.press("a");
-    await expect(w.activeOption).toHaveText("Antalya");
+    await w.trigger.press("c");
+    await expect(w.activeOption).toHaveText("Chris Redfield");
+    await w.trigger.press("c");
+    await expect(w.activeOption).toHaveText("Claire Redfield");
     // cycles back through options starting with the same letter
-    await w.trigger.press("a");
-    await expect(w.activeOption).toHaveText("Ankara");
+    await w.trigger.press("c");
+    await expect(w.activeOption).toHaveText("Chris Redfield");
   });
 
   test("Enter selects the active option and closes", async ({ page }) => {
     const w = widget(page, "basic");
     await w.trigger.press("ArrowDown");
     await expectOpen(w);
-    await w.trigger.press("ArrowDown"); // Ankara
+    await w.trigger.press("ArrowDown"); // Chris Redfield
     await w.trigger.press("Enter");
     await expectClosed(w);
-    await expect(w.value).toHaveText("Ankara");
-    expect(await nativeValue(page, "basic")).toBe("06");
+    await expect(w.value).toHaveText("Chris Redfield");
+    expect(await nativeValue(page, "basic")).toBe("chris");
     await expect(w.trigger).toBeFocused(); // focus returns to trigger
   });
 
@@ -115,11 +115,11 @@ test.describe("#basic keyboard map (no-search mode)", () => {
     const w = widget(page, "basic");
     await w.trigger.press("ArrowDown");
     await expectOpen(w);
-    await w.trigger.press("ArrowDown"); // move active to Ankara
+    await w.trigger.press("ArrowDown"); // move active to Chris Redfield
     await w.trigger.press("Escape");
     await expectClosed(w);
     expect(await nativeValue(page, "basic")).toBe(""); // nothing selected
-    await expect(w.value.locator(".sl-placeholder")).toHaveText("Şehir seçiniz…");
+    await expect(w.value.locator(".sl-placeholder")).toHaveText("Karakter seçiniz…");
     await expect(w.trigger).toBeFocused();
   });
 
@@ -155,7 +155,7 @@ test.describe("#basic keyboard map (no-search mode)", () => {
     await expectOpen(w);
     await w.trigger.press("ArrowDown");
     const target = await activeDescendantTarget(page, w.trigger);
-    await expect(target).toHaveText("Ankara");
+    await expect(target).toHaveText("Chris Redfield");
     await expect(target).toHaveAttribute("data-active", "");
   });
 });
@@ -167,30 +167,32 @@ test.describe("#grouped keyboard map (search mode)", () => {
     await expect(w.searchInput).toBeFocused();
   });
 
-  test("typing filters diacritic-tolerantly: 'usku' matches Üsküdar", async ({ page }) => {
+  test("typing filters diacritic-tolerantly: 'isik' matches Işık Kulesi", async ({ page }) => {
+    // covers the ı→i (dotless) and ş→s folds
     const w = widget(page, "grouped");
     await openViaClick(w);
-    await w.searchInput.fill("usku");
+    await w.searchInput.fill("isik");
     await expect(w.options).toHaveCount(1);
-    await expect(w.options.first()).toHaveText("Üsküdar");
+    await expect(w.options.first()).toHaveText("Işık Kulesi");
     // its group header is still rendered
-    await expect(w.groupLabels).toHaveText(["İstanbul"]);
+    await expect(w.groupLabels).toHaveText(["Raccoon City"]);
   });
 
   test("PageDown jumps 10 options ahead", async ({ page }) => {
     const w = widget(page, "grouped");
     await openViaClick(w);
-    await expect(w.activeOption).toHaveText("Kadıköy"); // index 0
+    await expect(w.activeOption).toHaveText("R.P.D. Merkezi"); // index 0
     await w.searchInput.press("PageDown");
-    await expect(w.activeOption).toHaveText("Karşıyaka"); // index 10
+    await expect(w.activeOption).toHaveText("Salazar Kalesi"); // index 10
     await w.searchInput.press("PageUp");
-    await expect(w.activeOption).toHaveText("Kadıköy");
+    await expect(w.activeOption).toHaveText("R.P.D. Merkezi");
   });
 
   test("Escape first clears the query, second Escape closes", async ({ page }) => {
     const w = widget(page, "grouped");
     await openViaClick(w);
-    await w.searchInput.fill("usku");
+    // 'kulube' matches only Nöbetçi Kulübesi — covers the ü→u fold
+    await w.searchInput.fill("kulube");
     await expect(w.options).toHaveCount(1);
 
     await w.searchInput.press("Escape");
@@ -211,11 +213,11 @@ test.describe("#multi keyboard (multi + auto-search mode)", () => {
     const w = widget(page, "multi");
     await openViaClick(w);
     await expect(w.searchInput).toBeFocused();
-    await expect(w.chips).toHaveText(["JavaScript", "TypeScript"]);
+    await expect(w.chips).toHaveText(["Yeşil Ot", "Mavi Ot"]);
 
     await w.searchInput.press("Backspace");
-    await expect(w.chips).toHaveText(["JavaScript"]);
-    expect(await nativeSelected(page, "multi")).toEqual(["js"]);
+    await expect(w.chips).toHaveText(["Yeşil Ot"]);
+    expect(await nativeSelected(page, "multi")).toEqual(["yesil-ot"]);
 
     await w.searchInput.press("Backspace");
     await expect(w.chips).toHaveCount(0);
