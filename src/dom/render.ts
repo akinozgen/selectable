@@ -103,6 +103,12 @@ export function buildSkeleton(
     "data-state": "closed",
     "data-placement": "bottom",
   });
+  // No box until the first open in EVERY path: without the popover attribute
+  // (portal-forced strategy, popover-less browsers) the UA stylesheet never
+  // hides the panel, and a never-opened position:fixed panel would sit
+  // hit-testable over the page. PanelController.open() flips this to flex,
+  // close() restores it.
+  panel.style.display = "none";
   if ("popover" in HTMLElement.prototype) {
     panel.setAttribute("popover", "manual");
   }

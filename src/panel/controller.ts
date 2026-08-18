@@ -7,23 +7,53 @@ import type { PositioningConfig } from "../core/types";
  * top layer via popover="manual"; browsers without the Popover API get a
  * body-portal fallback with a theme/token bridge. Placement math is shared.
  */
+
+/** Cadence of the open-panel hidden-anchor poll (see watchAnchor). */
+const ANCHOR_POLL_MS = 150;
+
 export class PanelController {
   private updater: AutoUpdateHandle | null = null;
   private portalRoot: HTMLElement | null = null;
   private readonly supportsPopover: boolean;
   private homeAnchor: Comment | null = null;
+  /** Ghost-panel guard: watches the trigger while open (see watchAnchor). */
+  private anchorWatch: IntersectionObserver | null = null;
+  private anchorPoll: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private root: HTMLElement,
     private trigger: HTMLElement,
     private panel: HTMLElement,
     private config: PositioningConfig = {},
+    /**
+     * Safety-close signal: the anchor was hidden/removed while open, or the
+     * popover was hidden behind our back (UA-initiated). The owner must run
+     * a NON-vetoable close — a ghost panel must never survive a veto.
+     */
+    private onAnchorHidden?: () => void,
   ) {
     this.supportsPopover =
       typeof HTMLElement !== "undefined" &&
       "popover" in HTMLElement.prototype &&
       config.strategy !== "portal";
+    // UA-initiated popover hides (fullscreen/modal entry, external
+    // hidePopover() calls…) bypass close(); the `toggle` event is the only
+    // signal we get for them.
+    this.panel.addEventListener("toggle", this.onToggle);
   }
+
+  /**
+   * Popover `toggle` fires on every show/hide — including hides we did NOT
+   * initiate. Our own close() flips data-state to "closed" BEFORE calling
+   * hidePopover(), so a "closed" newState arriving while data-state still
+   * says "open" means an external hide → report it for the safety close.
+   */
+  private readonly onToggle = (e: Event): void => {
+    const newState = (e as Event & { newState?: string }).newState;
+    if (newState === "closed" && this.panel.dataset.state === "open") {
+      this.onAnchorHidden?.();
+    }
+  };
 
   get isPortaled(): boolean {
     return this.portalRoot !== null;
@@ -39,9 +69,11 @@ export class PanelController {
     this.panel.dataset.state = "open";
     this.reposition();
     this.updater = autoUpdate(this.trigger, this.panel, () => this.reposition());
+    this.watchAnchor();
   }
 
   close(): void {
+    this.unwatchAnchor();
     this.updater?.stop();
     this.updater = null;
     this.panel.dataset.state = "closed";
@@ -59,11 +91,96 @@ export class PanelController {
 
   destroy(): void {
     this.close();
+    this.panel.removeEventListener("toggle", this.onToggle);
     this.portalRoot?.remove();
     this.portalRoot = null;
   }
 
+  /**
+   * Ghost-panel guard: while open, watch the trigger for "the host hid the
+   * region around us" (tab switch, wizard step, conditional section) — which
+   * often happens WITHOUT any pointer event the outside-click close would
+   * see. Two feature-detected channels:
+   *
+   * - IntersectionObserver (threshold 0): instant for hides that DESTROY the
+   *   trigger's geometry — display:none subtree, DOM removal. Every entry is
+   *   gated through the same sync hidden-check, never isIntersecting alone: a
+   *   trigger merely scrolled out of the viewport also stops intersecting but
+   *   keeps its box and stays checkVisibility-true, and scrolling must NOT
+   *   close the panel. (IO v2 `trackVisibility` was evaluated and rejected:
+   *   it only fires on CHANGES of isVisible, and our own top-layer panel
+   *   already forces isVisible=false while open, so style-only hides never
+   *   produce an entry.)
+   * - A slow checkVisibility poll: visibility:hidden / opacity:0 on an
+   *   ancestor changes no geometry and fires no event of any kind — a poll is
+   *   the only reliable signal. One checkVisibility call per tick, only while
+   *   the panel is open, only where the API exists.
+   */
+  private watchAnchor(): void {
+    const check = (): void => {
+      if (!this.trigger.isConnected || this.anchorInvisible()) {
+        this.onAnchorHidden?.();
+      }
+    };
+    if (typeof IntersectionObserver === "function") {
+      this.anchorWatch = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting && this.anchorGone()) {
+              this.onAnchorHidden?.();
+              return;
+            }
+          }
+          check(); // geometry intact — probe style-level hiding too
+        },
+        { threshold: 0 },
+      );
+      this.anchorWatch.observe(this.trigger);
+    }
+    if (typeof this.trigger.checkVisibility === "function") {
+      this.anchorPoll = setInterval(check, ANCHOR_POLL_MS);
+    }
+  }
+
+  private unwatchAnchor(): void {
+    this.anchorWatch?.disconnect();
+    this.anchorWatch = null;
+    if (this.anchorPoll !== null) {
+      clearInterval(this.anchorPoll);
+      this.anchorPoll = null;
+    }
+  }
+
+  /** The trigger provably has NO rendered box: detached or display:none subtree. */
+  private anchorGone(): boolean {
+    if (!this.trigger.isConnected) return true;
+    const r = this.trigger.getBoundingClientRect();
+    return r.width === 0 && r.height === 0;
+  }
+
+  /**
+   * checkVisibility-based hidden test — covers display/visibility/opacity on
+   * the trigger AND its ancestors. Deliberately NOT a bare zero-rect test:
+   * layout-less environments (jsdom) report 0x0 for every element, and a
+   * trigger scrolled out of the viewport keeps its box — neither may close.
+   * Engines without checkVisibility simply skip this layer.
+   */
+  private anchorInvisible(): boolean {
+    const t = this.trigger;
+    if (typeof t.checkVisibility !== "function") return false;
+    return t.checkVisibility({ visibilityProperty: true, opacityProperty: true }) === false;
+  }
+
   private reposition(): void {
+    // Belt-and-braces ghost guard on every autoUpdate tick: anchor detached
+    // or hidden → close instead of positioning against a dead rect. Queued
+    // as a microtask so the safety close never runs re-entrantly inside the
+    // synchronous open() → reposition() call.
+    if (this.onAnchorHidden && (!this.trigger.isConnected || this.anchorInvisible())) {
+      const cb = this.onAnchorHidden;
+      queueMicrotask(cb);
+      return;
+    }
     const anchor = this.trigger.getBoundingClientRect();
     // Natural size measurement: lift the inline cap, then re-apply.
     this.panel.style.maxHeight = "";

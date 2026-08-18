@@ -362,6 +362,16 @@
   transform-origin: center bottom;
 }
 
+/* Kapalı panel HİÇBİR yolda tıklama yakalayamaz (hayalet panel korkuluğu).
+   Kapanış animasyonu zaten opacity 0'da biter (forwards); statik opacity 0
+   animasyon iptal edilirse/hiç koşmazsa da (ata display:none olurken,
+   ilk açılış öncesi portal yolu) aynı sonucu garantiler. Animasyon oynarken
+   keyframe değerleri bu statik bildirimi ezer — solma bozulmaz. */
+.sl-panel[data-state="closed"] {
+  pointer-events: none;
+  opacity: 0;
+}
+
 /* ---------- ARAMA ---------- */
 
 .sl-search {

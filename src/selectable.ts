@@ -248,6 +248,13 @@ export class Selectable<T = unknown> {
       this.refs.trigger,
       this.refs.panel,
       options.positioning,
+      // Safety teardown: the host hid/removed the region around the trigger
+      // (tab switch, wizard step, conditional section) or the UA hid the
+      // popover behind our back. NON-vetoable by design — a beforeClose veto
+      // must not keep an orphaned top-layer panel alive — and never steals
+      // focus into a hidden region. Emits the normal `close`; no chain
+      // advance (that only happens on user picks).
+      () => this.doClose({ focusTrigger: false }),
     );
     this.live = new LiveRegion();
     this.refs.root.appendChild(this.live.node);

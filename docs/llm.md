@@ -391,6 +391,7 @@ facility.on("change", ({ value }) => {
 - **CSS import is mandatory** (`import "@akinozgen17/selectablejs/css"` or `dist/selectable.css`); otherwise the component renders unstyled.
 - **IIFE global is a namespace**: `window.Selectable.Selectable` is the class; `Selectable.asyncSource`, `Selectable.tr` etc. sit beside it.
 - **Livewire/htmx DOM morph**: wrap in `wire:ignore` (or re-run `Selectable.upgrade()` after swaps). External mutations to the native select are otherwise picked up automatically via MutationObserver — manual `refresh()` is almost never needed.
+- **Hiding the region around an open panel auto-closes it.** `display:none` / `visibility:hidden` / `opacity:0` ancestors and DOM removal of the trigger are detected while open (tab switches, wizard steps, conditional sections — no pointer event needed); the safety close is **non-vetoable** (`beforeClose` skipped, like destroy/disable), never steals focus, emits the normal `close`. Scrolling the trigger out of view does NOT close.
 - **`form.reset()` is supported natively** — selection snaps back to the markup's `selected` attributes, no code needed.
 - **Created tags / async-selected values become real native `<option>`s** (marked `data-sl-created`) so the form submits them. With zero search matches the create row is auto-activated — bare `Enter` creates the tag.
 - **Native `<label>`s keep working**: the trigger inherits the accessible name (`aria-labelledby`) and clicking the label focuses the trigger — don't add duplicate `aria-label`s.

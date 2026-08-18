@@ -468,6 +468,19 @@ new Selectable("#site", {
 While the panel is open, scrolling, resizing, and virtual-keyboard changes are
 observed, and the position is updated at most once per frame.
 
+### Panel lifecycle safety
+
+While the panel is open, the trigger is watched: if the host app hides or
+removes the region containing it — a tab switch, a wizard step, a conditional
+section (`display: none`, `visibility: hidden` or `opacity: 0` on any
+ancestor, or DOM removal) — the panel **closes automatically**, so no orphaned
+top-layer panel can float over the page or invisibly intercept clicks. The
+same applies when the popover is hidden by the browser itself (e.g. entering
+fullscreen). This safety close is **non-vetoable** — `beforeClose` is not
+consulted, exactly like `destroy()`/`disable()` — it never moves focus, and it
+emits the normal `close` event. Ordinary scrolling never triggers it: a
+trigger scrolled out of view keeps its panel open and tracking.
+
 ## `render`
 
 Custom templates; return a `Node` or a `string` (strings are rendered as
